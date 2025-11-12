@@ -23,14 +23,59 @@ const formattedTime = computed(() => {
 })
 
 const formatResponse = (response: string) => {
-  // Enhanced markdown formatting
-  return response
+  let formatted = response
+    // Headers (##, ###, etc.)
+    .replace(/^### (.*?)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.*?)$/gm, '<h2>$1</h2>')
+    .replace(/^# (.*?)$/gm, '<h1>$1</h1>')
+    
+    // Bold and italic
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
-    .replace(/`(.*?)`/g, '<code>$1</code>')
+    
+    // Inline code
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    
+    // Tables - detect and convert markdown tables
+    .replace(/(\|[^\n]+\|\n\|[-:\s|]+\|\n(?:\|[^\n]+\|\n?)+)/g, (match) => {
+      const lines = match.trim().split('\n')
+      const headers = lines[0].split('|').filter(cell => cell.trim())
+      const rows = lines.slice(2).map(row => 
+        row.split('|').filter(cell => cell.trim())
+      )
+      
+      let table = '<table><thead><tr>'
+      headers.forEach(header => {
+        table += `<th>${header.trim()}</th>`
+      })
+      table += '</tr></thead><tbody>'
+      
+      rows.forEach(row => {
+        table += '<tr>'
+        row.forEach(cell => {
+          table += `<td>${cell.trim()}</td>`
+        })
+        table += '</tr>'
+      })
+      table += '</tbody></table>'
+      
+      return table
+    })
+    
+    // Unordered lists
+    .replace(/^- (.*?)$/gm, '<li>$1</li>')
+    .replace(/(<li>.*?<\/li>(?:\n)?)+/g, '<ul>$&</ul>')
+    
+    // Line breaks and paragraphs
     .replace(/\n\n/g, '</p><p>')
     .replace(/\n/g, '<br>')
-    .replace(/^(.+)$/, '<p>$1</p>')
+    
+  // Wrap in paragraph if not already wrapped in block element
+  if (!formatted.match(/^<(h[1-6]|table|ul|ol|div|p)/)) {
+    formatted = `<p>${formatted}</p>`
+  }
+  
+  return formatted
 }
 </script>
 
@@ -98,14 +143,15 @@ const formatResponse = (response: string) => {
 .chat-message-group {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  margin-bottom: 1.5rem;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
 }
 
 .message {
-  padding: 1rem;
-  border-radius: 12px;
+  padding: 0.75rem;
+  border-radius: 8px;
   max-width: 85%;
+  font-size: 0.875rem;
 }
 
 .user-message {
@@ -128,17 +174,18 @@ const formatResponse = (response: string) => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 0.5rem;
-  font-size: 0.875rem;
+  font-size: 0.75rem;
 }
 
 .sender-info {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.375rem;
 }
 
 .sender {
   font-weight: 600;
+  font-size: 0.75rem;
 }
 
 .sender.ai {
@@ -149,8 +196,8 @@ const formatResponse = (response: string) => {
 }
 
 .model-badge {
-  font-size: 0.75rem;
-  padding: 0.125rem 0.5rem;
+  font-size: 0.625rem;
+  padding: 0.125rem 0.375rem;
   background: #e0e7ff;
   color: #4338ca;
   border-radius: 9999px;
@@ -158,7 +205,7 @@ const formatResponse = (response: string) => {
 }
 
 .timestamp {
-  font-size: 0.75rem;
+  font-size: 0.625rem;
   opacity: 0.7;
 }
 
@@ -182,11 +229,12 @@ const formatResponse = (response: string) => {
 }
 
 .message-content {
-  line-height: 1.6;
+  line-height: normal;
+  font-size: 0.875rem;
 }
 
 .message-content p {
-  margin: 0.5rem 0;
+  margin: 0.375rem 0;
 }
 
 .message-content:first-child p:first-child {
@@ -204,22 +252,96 @@ const formatResponse = (response: string) => {
 
 .response-content :deep(code) {
   background: #e2e8f0;
-  padding: 0.125rem 0.375rem;
-  border-radius: 4px;
+  padding: 0.125rem 0.25rem;
+  border-radius: 3px;
   font-family: 'Monaco', 'Courier New', monospace;
-  font-size: 0.875em;
+  font-size: 0.813rem;
+}
+
+.response-content :deep(h1),
+.response-content :deep(h2),
+.response-content :deep(h3) {
+  margin: 0;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.response-content :deep(h1) {
+  font-size: 1.125rem;
+  color: #111827;
+}
+
+.response-content :deep(h2) {
+  font-size: 1rem;
+  color: #1f2937;
+}
+
+.response-content :deep(h3) {
+  font-size: 0.938rem;
+  color: #374151;
+}
+
+.response-content :deep(table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75rem 0;
+  font-size: 0.813rem;
+  background: white;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+}
+
+.response-content :deep(thead) {
+  background: #f9fafb;
+}
+
+.response-content :deep(th) {
+  padding: 0.2rem 0.3rem;
+  text-align: left;
+  font-weight: 600;
+  color: #111827;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 0.75rem;
+}
+
+.response-content :deep(td) {
+  padding: 0.2rem;
+  border-bottom: 1px solid #f3f4f6;
+  color: #374151;
+  font-size: 0.813rem;
+}
+
+.response-content :deep(tbody tr:last-child td) {
+  border-bottom: none;
+}
+
+.response-content :deep(tbody tr:hover) {
+  background: #fafafa;
+}
+
+.response-content :deep(ul) {
+  margin: 0.375rem 0;
+  padding-left: 1.25rem;
+}
+
+.response-content :deep(li) {
+  margin: 0.25rem 0;
+  line-height: 1.5;
+  font-size: 0.875rem;
 }
 
 .screenshot-preview {
-  margin-top: 0.75rem;
+  margin-top: 0.5rem;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.375rem;
 }
 
 .screenshot-preview img {
-  max-width: 200px;
-  border-radius: 8px;
+  max-width: 180px;
+  border-radius: 6px;
   cursor: pointer;
   transition: opacity 0.2s;
   border: 2px solid rgba(255, 255, 255, 0.2);
@@ -230,21 +352,22 @@ const formatResponse = (response: string) => {
 }
 
 .screenshot-label {
-  font-size: 0.75rem;
+  font-size: 0.688rem;
   opacity: 0.9;
 }
 
 .loading-response {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.625rem;
   color: #6b7280;
-  padding: 0.5rem 0;
+  padding: 0.375rem 0;
+  font-size: 0.813rem;
 }
 
 .loading-spinner {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   border: 2px solid #e5e7eb;
   border-top: 2px solid #3b82f6;
   border-radius: 50%;
@@ -254,11 +377,12 @@ const formatResponse = (response: string) => {
 .error-response {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.375rem;
   color: #dc2626;
-  padding: 0.5rem;
+  padding: 0.375rem;
   background: #fee2e2;
-  border-radius: 6px;
+  border-radius: 4px;
+  font-size: 0.813rem;
 }
 
 @keyframes spin {
