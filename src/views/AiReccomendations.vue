@@ -78,7 +78,7 @@ const handleClearAll = async () => {
     <div class="recommendation-header">
       <div class="header-content">
         <h2>🤖 AI Recommendations</h2>
-        <span class="symbol-badge">{{ symbolRoot }}</span>
+        <!--span class="symbol-badge">{{ symbolRoot }}</span-->
       </div>
       <p class="header-subtitle">Get AI-powered analysis and recommendations for your positions</p>
     </div>
