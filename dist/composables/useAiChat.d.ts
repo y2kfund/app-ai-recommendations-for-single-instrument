@@ -1,0 +1,41 @@
+import { AiConversation } from '../types';
+export declare function useAiChat(userId: string, symbolRoot: string): {
+    conversations: import('vue').Ref<{
+        id: string;
+        user_id: string;
+        symbol_root: string;
+        question: string;
+        screenshot?: string | undefined;
+        ai_response: string;
+        model: string;
+        page_url?: string | undefined;
+        metadata?: Record<string, any> | undefined;
+        created_at: Date;
+        updated_at: Date;
+        loading?: boolean | undefined;
+        error?: string | undefined;
+    }[], AiConversation[] | {
+        id: string;
+        user_id: string;
+        symbol_root: string;
+        question: string;
+        screenshot?: string | undefined;
+        ai_response: string;
+        model: string;
+        page_url?: string | undefined;
+        metadata?: Record<string, any> | undefined;
+        created_at: Date;
+        updated_at: Date;
+        loading?: boolean | undefined;
+        error?: string | undefined;
+    }[]>;
+    isLoading: import('vue').Ref<boolean, boolean>;
+    isProcessing: import('vue').Ref<boolean, boolean>;
+    isCapturing: import('vue').Ref<boolean, boolean>;
+    error: import('vue').ComputedRef<string | null>;
+    hasConversations: import('vue').ComputedRef<boolean>;
+    loadConversations: () => Promise<void>;
+    askQuestion: (question: string, includeScreenshot?: boolean) => Promise<AiConversation>;
+    deleteConversation: (conversationId: string) => Promise<void>;
+    clearAllConversations: () => Promise<void>;
+};
