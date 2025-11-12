@@ -1,0 +1,5 @@
+.ai-recommendations-for-single-instrument-view {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
