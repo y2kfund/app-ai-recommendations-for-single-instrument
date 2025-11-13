@@ -77,10 +77,10 @@ const handleClearAll = async () => {
   <div class="ai-recommendation-box">
     <div class="recommendation-header">
       <div class="header-content">
-        <h2>🤖 AI Recommendations</h2>
+        <h2>🤖 Analyst</h2>
         <!--span class="symbol-badge">{{ symbolRoot }}</span-->
       </div>
-      <p class="header-subtitle">Get AI-powered analysis and recommendations for your positions</p>
+      <!--p class="header-subtitle">Get AI-powered analysis and recommendations for your positions</p-->
     </div>
 
     <div v-if="!userId" class="error-state">

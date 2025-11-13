@@ -40,7 +40,7 @@ watch(() => props.conversations.length, () => {
 
 <template>
   <div class="conversation-timeline-container">
-    <div class="timeline-header">
+    <!--div class="timeline-header">
       <h3>Conversation History</h3>
       <button 
         v-if="conversations.length > 0"
@@ -54,7 +54,7 @@ watch(() => props.conversations.length, () => {
         </svg>
         Clear All
       </button>
-    </div>
+    </div-->
 
     <div class="timeline-content" ref="timelineRef">
       <div v-if="isLoading" class="loading-state">
