@@ -126,6 +126,7 @@ const toggleSidebar = () => {
   min-height: 400px;
   gap: 8px;
   position: relative;
+  min-width: 600px;
 }
 
 .sidebar-toggle-btn {
@@ -143,6 +144,7 @@ const toggleSidebar = () => {
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
+  width: auto;
 }
 
 .sidebar-toggle-btn:hover {
@@ -195,10 +197,6 @@ const toggleSidebar = () => {
   color: #1e293b;
 }
 
-.journal-editor-panel.sidebar-hidden .editor-header {
-    padding-left: 36px;
-}
-
 .btn-new-note {
   display: flex;
   align-items: center;
@@ -213,6 +211,7 @@ const toggleSidebar = () => {
   cursor: pointer;
   transition: background 0.2s ease, transform 0.1s ease;
   box-shadow: 0 1px 2px rgba(59, 130, 246, 0.2);
+  width: auto;
 }
 
 .btn-new-note:hover {
@@ -365,5 +364,11 @@ const toggleSidebar = () => {
 
 .journal-sidebar::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+</style>
+
+<style>
+.journal-editor-panel.sidebar-hidden .editor-header {
+    padding-left: 36px;
 }
 </style>
