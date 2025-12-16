@@ -16,7 +16,7 @@ const emit = defineEmits<{
 const title = ref(props.entry.title)
 const content = ref(props.entry.content)
 const isBold = ref(props.entry.is_bold)
-const isPreviewMode = ref(false)
+const isPreviewMode = ref(true) // Changed to true for default preview mode
 
 // Configure marked options
 marked.setOptions({
@@ -37,6 +37,7 @@ watch(() => props.entry, (newEntry) => {
   title.value = newEntry.title
   content.value = newEntry.content
   isBold.value = newEntry.is_bold
+  isPreviewMode.value = true // Reset to preview mode when switching notes
 }, { immediate: true })
 
 const handleSave = () => {
@@ -104,86 +105,97 @@ const insertMarkdown = (syntax: string) => {
   <div class="journal-editor">
     <div class="editor-header">
       <input
+        v-if="!isPreviewMode"
         v-model="title"
         class="title-input"
         placeholder="Note title..."
         @blur="handleBlur"
       />
+      <h2 v-else class="title-display">{{ title }}</h2>
+      
       <div class="editor-toolbar">
+        <template v-if="!isPreviewMode">
+          <button
+            class="toolbar-btn"
+            @click="insertMarkdown('bold')"
+            title="Bold (Ctrl+B)"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/>
+              <path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/>
+            </svg>
+          </button>
+          <button
+            class="toolbar-btn"
+            @click="insertMarkdown('italic')"
+            title="Italic (Ctrl+I)"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="19" y1="4" x2="10" y2="4"/>
+              <line x1="14" y1="20" x2="5" y2="20"/>
+              <line x1="15" y1="4" x2="9" y2="20"/>
+            </svg>
+          </button>
+          <button
+            class="toolbar-btn"
+            @click="insertMarkdown('heading')"
+            title="Heading"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 12h8m-8-6v12m8-12v12m-4-6h8"/>
+            </svg>
+          </button>
+          <button
+            class="toolbar-btn"
+            @click="insertMarkdown('link')"
+            title="Link"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+            </svg>
+          </button>
+          <button
+            class="toolbar-btn"
+            @click="insertMarkdown('code')"
+            title="Code"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="16 18 22 12 16 6"/>
+              <polyline points="8 6 2 12 8 18"/>
+            </svg>
+          </button>
+          <button
+            class="toolbar-btn"
+            @click="insertMarkdown('list')"
+            title="List"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="8" y1="6" x2="21" y2="6"/>
+              <line x1="8" y1="12" x2="21" y2="12"/>
+              <line x1="8" y1="18" x2="21" y2="18"/>
+              <line x1="3" y1="6" x2="3.01" y2="6"/>
+              <line x1="3" y1="12" x2="3.01" y2="12"/>
+              <line x1="3" y1="18" x2="3.01" y2="18"/>
+            </svg>
+          </button>
+          <div class="toolbar-divider"></div>
+        </template>
+        
         <button
-          class="toolbar-btn"
-          @click="insertMarkdown('bold')"
-          title="Bold (Ctrl+B)"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/>
-            <path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/>
-          </svg>
-        </button>
-        <button
-          class="toolbar-btn"
-          @click="insertMarkdown('italic')"
-          title="Italic (Ctrl+I)"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="19" y1="4" x2="10" y2="4"/>
-            <line x1="14" y1="20" x2="5" y2="20"/>
-            <line x1="15" y1="4" x2="9" y2="20"/>
-          </svg>
-        </button>
-        <button
-          class="toolbar-btn"
-          @click="insertMarkdown('heading')"
-          title="Heading"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M4 12h8m-8-6v12m8-12v12m-4-6h8"/>
-          </svg>
-        </button>
-        <button
-          class="toolbar-btn"
-          @click="insertMarkdown('link')"
-          title="Link"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
-          </svg>
-        </button>
-        <button
-          class="toolbar-btn"
-          @click="insertMarkdown('code')"
-          title="Code"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="16 18 22 12 16 6"/>
-            <polyline points="8 6 2 12 8 18"/>
-          </svg>
-        </button>
-        <button
-          class="toolbar-btn"
-          @click="insertMarkdown('list')"
-          title="List"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="8" y1="6" x2="21" y2="6"/>
-            <line x1="8" y1="12" x2="21" y2="12"/>
-            <line x1="8" y1="18" x2="21" y2="18"/>
-            <line x1="3" y1="6" x2="3.01" y2="6"/>
-            <line x1="3" y1="12" x2="3.01" y2="12"/>
-            <line x1="3" y1="18" x2="3.01" y2="18"/>
-          </svg>
-        </button>
-        <div class="toolbar-divider"></div>
-        <button
-          :class="['toolbar-btn', { active: isPreviewMode }]"
+          :class="['toolbar-btn', 'mode-toggle', { active: !isPreviewMode }]"
           @click="togglePreview"
-          title="Toggle Preview"
+          :title="isPreviewMode ? 'Switch to Edit Mode' : 'Switch to Preview Mode'"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg v-if="isPreviewMode" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+          <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
             <circle cx="12" cy="12" r="3"/>
           </svg>
+          <span class="mode-label">{{ isPreviewMode ? 'Edit' : 'Preview' }}</span>
         </button>
       </div>
     </div>
@@ -198,11 +210,18 @@ const insertMarkdown = (syntax: string) => {
     </div>
 
     <div v-else class="preview-content">
-      <div class="markdown-body" v-html="renderedContent"></div>
+      <div v-if="content" class="markdown-body" v-html="renderedContent"></div>
+      <div v-else class="empty-preview">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+        </svg>
+        <p>No content yet. Click "Edit" to add notes.</p>
+      </div>
     </div>
     
     <div class="editor-footer">
-      <span class="markdown-hint">💡 Markdown supported</span>
+      <span class="markdown-hint">💡 {{ isPreviewMode ? 'Viewing in preview mode' : 'Markdown supported' }}</span>
       <span class="updated-at">Last updated: {{ new Date(entry.updated_at).toLocaleString() }}</span>
     </div>
   </div>
@@ -237,6 +256,16 @@ const insertMarkdown = (syntax: string) => {
   font-size: 16px;
   font-weight: 600;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.title-display {
+  flex: 1;
+  min-width: 200px;
+  padding: 10px 14px;
+  margin: 0;
+  color: #1e293b;
+  font-size: 18px;
+  font-weight: 600;
 }
 
 .title-input::placeholder {
@@ -276,6 +305,26 @@ const insertMarkdown = (syntax: string) => {
   transition: all 0.2s ease;
   width: 36px;
   height: 36px;
+}
+
+.toolbar-btn.mode-toggle {
+  width: auto;
+  padding: 8px 12px;
+  gap: 6px;
+  background: #3b82f6;
+  color: #ffffff;
+  border-color: #3b82f6;
+  font-weight: 500;
+}
+
+.toolbar-btn.mode-toggle:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+.mode-label {
+  font-size: 13px;
 }
 
 .toolbar-btn:hover {
@@ -320,6 +369,25 @@ const insertMarkdown = (syntax: string) => {
 .preview-content {
   padding: 20px;
   background: #ffffff;
+}
+
+.empty-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #94a3b8;
+  gap: 16px;
+}
+
+.empty-preview svg {
+  color: #cbd5e1;
+}
+
+.empty-preview p {
+  margin: 0;
+  font-size: 14px;
 }
 
 .markdown-body {
@@ -470,7 +538,8 @@ const insertMarkdown = (syntax: string) => {
     gap: 8px;
   }
 
-  .title-input {
+  .title-input,
+  .title-display {
     font-size: 14px;
     padding: 8px 12px;
     min-width: 150px;
@@ -479,6 +548,14 @@ const insertMarkdown = (syntax: string) => {
   .toolbar-btn {
     width: 32px;
     height: 32px;
+  }
+
+  .toolbar-btn.mode-toggle {
+    padding: 8px 10px;
+  }
+
+  .mode-label {
+    font-size: 12px;
   }
 
   .content-textarea,
@@ -497,7 +574,8 @@ const insertMarkdown = (syntax: string) => {
     padding: 10px;
   }
 
-  .title-input {
+  .title-input,
+  .title-display {
     font-size: 13px;
   }
 
@@ -505,6 +583,15 @@ const insertMarkdown = (syntax: string) => {
   .preview-content {
     padding: 12px;
     font-size: 12px;
+  }
+
+  .mode-label {
+    display: none;
+  }
+
+  .toolbar-btn.mode-toggle {
+    width: 36px;
+    padding: 8px;
   }
 }
 
