@@ -74,6 +74,6 @@ export declare function useJournal(userId: string, symbolRoot: string): {
     createEntry: (title: string, parentId?: string | null) => Promise<void>;
     updateEntry: (id: string, updates: Partial<JournalEntry>) => Promise<void>;
     deleteEntry: (id: string) => Promise<void>;
-    selectEntry: (id: string) => void;
+    selectEntry: (id: string) => Promise<void>;
     toggleCollapse: (id: string) => Promise<void>;
 };

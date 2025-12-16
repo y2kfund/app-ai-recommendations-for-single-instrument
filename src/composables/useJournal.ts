@@ -1,4 +1,4 @@
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = import.meta.env.VITE_SUPA_URL
@@ -30,6 +30,50 @@ export function useJournal(userId: string, symbolRoot: string) {
   const selectedEntry = ref<JournalEntry | null>(null)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+
+  const saveLastSelectedNote = async (noteId: string) => {
+    try {
+      const { error: upsertError } = await supabase
+        .schema('hf')
+        .from('user_symbol_preferences')
+        .upsert({
+          user_id: userId,
+          symbol_root: symbolRoot,
+          last_selected_note_id: noteId,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id,symbol_root'
+        })
+
+      if (upsertError) throw upsertError
+    } catch (err: any) {
+      console.error('Failed to save last selected note:', err)
+    }
+  }
+
+  const loadLastSelectedNote = async () => {
+    try {
+      const { data, error: fetchError } = await supabase
+        .schema('hf')
+        .from('user_symbol_preferences')
+        .select('last_selected_note_id')
+        .eq('user_id', userId)
+        .eq('symbol_root', symbolRoot)
+        .single()
+
+      if (fetchError) {
+        if (fetchError.code !== 'PGRST116') { // Not found error
+          throw fetchError
+        }
+        return null
+      }
+
+      return data?.last_selected_note_id
+    } catch (err: any) {
+      console.error('Failed to load last selected note:', err)
+      return null
+    }
+  }
 
   const loadEntries = async () => {
     try {
@@ -70,6 +114,12 @@ export function useJournal(userId: string, symbolRoot: string) {
       })
 
       entries.value = rootEntries
+
+      // Restore last selected note
+      const lastSelectedNoteId = await loadLastSelectedNote()
+      if (lastSelectedNoteId && entryMap.has(lastSelectedNoteId)) {
+        selectedEntry.value = entryMap.get(lastSelectedNoteId)!
+      }
     } catch (err: any) {
       error.value = err.message
       console.error('Failed to load journal entries:', err)
@@ -102,6 +152,7 @@ export function useJournal(userId: string, symbolRoot: string) {
 
       await loadEntries()
       selectedEntry.value = data
+      await saveLastSelectedNote(data.id)
     } catch (err: any) {
       error.value = err.message
       console.error('Failed to create entry:', err)
@@ -168,7 +219,7 @@ export function useJournal(userId: string, symbolRoot: string) {
     }
   }
 
-  const selectEntry = (id: string) => {
+  const selectEntry = async (id: string) => {
     const findEntry = (entries: JournalEntry[]): JournalEntry | null => {
       for (const entry of entries) {
         if (entry.id === id) return entry
@@ -180,6 +231,11 @@ export function useJournal(userId: string, symbolRoot: string) {
       return null
     }
     selectedEntry.value = findEntry(entries.value)
+    
+    // Save the selection to Supabase
+    if (selectedEntry.value) {
+      await saveLastSelectedNote(id)
+    }
   }
 
   const toggleCollapse = async (id: string) => {
@@ -199,6 +255,13 @@ export function useJournal(userId: string, symbolRoot: string) {
       await updateEntry(id, { is_collapsed: !entry.is_collapsed })
     }
   }
+
+  // Watch for selectedEntry changes to save preference
+  watch(() => selectedEntry.value?.id, async (newId) => {
+    if (newId) {
+      await saveLastSelectedNote(newId)
+    }
+  })
 
   onMounted(() => {
     loadEntries()
