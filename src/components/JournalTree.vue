@@ -27,7 +27,7 @@ const emit = defineEmits<{
       v-for="entry in entries"
       :key="entry.id"
       class="tree-node"
-      :style="{ paddingLeft: `${level * 16}px` }"
+      :style="{ paddingLeft: `${level * 12}px` }"
     >
       <div
         :class="['node-header', { selected: entry.id === selectedId }]"
@@ -48,13 +48,13 @@ const emit = defineEmits<{
         
         <div class="node-actions">
           <button class="action-btn" @click.stop="emit('create', entry.id)" title="Add child note">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="12" y1="5" x2="12" y2="19"/>
               <line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
           </button>
           <button class="action-btn delete" @click.stop="emit('delete', entry.id)" title="Delete note">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="3 6 5 6 21 6"/>
               <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
             </svg>
@@ -82,18 +82,18 @@ const emit = defineEmits<{
 }
 
 .tree-node {
-  margin-bottom: 2px;
+  margin-bottom: 1px;
 }
 
 .node-header {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 10px;
-  border-radius: 6px;
+  gap: 4px;
+  padding: 4px 6px;
+  border-radius: 4px;
   cursor: pointer;
   transition: background 0.15s ease;
-  min-height: 34px;
+  min-height: 26px;
   box-sizing: border-box;
 }
 
@@ -117,8 +117,8 @@ const emit = defineEmits<{
   justify-content: center;
   transition: color 0.15s ease, transform 0.15s ease;
   flex-shrink: 0;
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
 }
 
 .collapse-btn:hover {
@@ -130,18 +130,18 @@ const emit = defineEmits<{
 }
 
 .spacer {
-  width: 16px;
+  width: 14px;
   flex-shrink: 0;
 }
 
 .node-title {
   flex: 1;
-  font-size: 13px;
+  font-size: 12px;
   color: #334155;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 1.4;
+  line-height: 1.3;
 }
 
 .node-title.bold {
@@ -151,7 +151,7 @@ const emit = defineEmits<{
 
 .node-actions {
   display: flex;
-  gap: 4px;
+  gap: 2px;
   opacity: 0;
   transition: opacity 0.15s ease;
   flex-shrink: 0;
@@ -163,18 +163,18 @@ const emit = defineEmits<{
 }
 
 .action-btn {
-  padding: 4px;
+  padding: 3px;
   background: none;
   border: none;
   color: #64748b;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 3px;
   transition: all 0.15s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
 }
 
@@ -191,17 +191,17 @@ const emit = defineEmits<{
 /* Responsive */
 @media (max-width: 480px) {
   .node-header {
-    padding: 6px 8px;
-    min-height: 32px;
+    padding: 3px 5px;
+    min-height: 24px;
   }
 
   .node-title {
-    font-size: 12px;
+    font-size: 11px;
   }
 
   .action-btn {
-    width: 22px;
-    height: 22px;
+    width: 18px;
+    height: 18px;
   }
 }
 </style>

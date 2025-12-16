@@ -56,7 +56,7 @@ const toggleSidebar = () => {
       @click="toggleSidebar"
       :title="isSidebarVisible ? 'Hide notes' : 'Show notes'"
     >
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
         <line x1="9" y1="3" x2="9" y2="21"/>
       </svg>
@@ -66,17 +66,17 @@ const toggleSidebar = () => {
       <div class="journal-header">
         <h3>📓 Notes</h3>
         <button class="btn-new-note" @click="handleCreateEntry(null)">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="12" y1="5" x2="12" y2="19"/>
             <line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
-          <span class="btn-text">New Note</span>
+          <span class="btn-text">New</span>
         </button>
       </div>
 
       <div v-if="isLoading" class="loading-state">
         <div class="loading-spinner"></div>
-        <p>Loading notes...</p>
+        <p>Loading...</p>
       </div>
 
       <JournalTree
@@ -97,7 +97,7 @@ const toggleSidebar = () => {
         @update="handleUpdateEntry"
       />
       <div v-else class="empty-state">
-        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+        <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
           <polyline points="14 2 14 8 20 8"/>
           <line x1="12" y1="18" x2="12" y2="12"/>
@@ -109,7 +109,7 @@ const toggleSidebar = () => {
     </div>
 
     <div v-if="error" class="error-banner">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="10"/>
         <line x1="12" y1="8" x2="12" y2="12"/>
         <line x1="12" y1="16" x2="12.01" y2="16"/>
@@ -124,33 +124,29 @@ const toggleSidebar = () => {
   display: flex;
   height: calc(100vh - 200px);
   min-height: 400px;
-  gap: 12px;
+  gap: 8px;
   position: relative;
 }
 
 .sidebar-toggle-btn {
   position: absolute;
-  top: 12px;
-  left: 12px;
+  top: 8px;
+  left: 8px;
   z-index: 10;
-  padding: 8px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  padding: 6px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
   color: #64748b;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .sidebar-toggle-btn:hover {
-  background: #f8f9fa;
-  border-color: #cbd5e1;
   color: #1e293b;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
 }
 
 .sidebar-toggle-btn:active {
@@ -158,14 +154,14 @@ const toggleSidebar = () => {
 }
 
 .journal-sidebar {
-  width: 280px;
-  min-width: 200px;
+  width: 240px;
+  min-width: 180px;
   background: #f8f9fa;
-  border-radius: 12px;
-  padding: 16px;
+  border-radius: 8px;
+  padding: 10px;
   overflow-y: auto;
   border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   animation: slideIn 0.2s ease-out;
 }
 
@@ -184,31 +180,35 @@ const toggleSidebar = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  padding-left: 45px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  padding-left: 28px;
   border-bottom: 1px solid #e2e8f0;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
 .journal-header h3 {
   margin: 0;
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 600;
   color: #1e293b;
+}
+
+.journal-editor-panel.sidebar-hidden .editor-header {
+    padding-left: 36px;
 }
 
 .btn-new-note {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
+  gap: 4px;
+  padding: 4px 8px;
   background: #3b82f6;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   color: #fff;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   cursor: pointer;
   transition: background 0.2s ease, transform 0.1s ease;
@@ -217,7 +217,7 @@ const toggleSidebar = () => {
 
 .btn-new-note:hover {
   background: #2563eb;
-  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 2px 3px rgba(59, 130, 246, 0.3);
 }
 
 .btn-new-note:active {
@@ -228,10 +228,10 @@ const toggleSidebar = () => {
   flex: 1;
   min-width: 0;
   background: #ffffff;
-  border-radius: 12px;
+  border-radius: 8px;
   border: 1px solid #e2e8f0;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .empty-state {
@@ -241,8 +241,8 @@ const toggleSidebar = () => {
   justify-content: center;
   height: 100%;
   color: #64748b;
-  gap: 16px;
-  padding: 32px 16px;
+  gap: 12px;
+  padding: 24px 16px;
   text-align: center;
 }
 
@@ -252,14 +252,14 @@ const toggleSidebar = () => {
 
 .empty-state h3 {
   margin: 0;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: #475569;
 }
 
 .empty-state p {
   margin: 0;
-  font-size: 14px;
+  font-size: 13px;
   color: #94a3b8;
 }
 
@@ -267,14 +267,14 @@ const toggleSidebar = () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 32px 16px;
+  gap: 10px;
+  padding: 24px 16px;
   color: #64748b;
 }
 
 .loading-spinner {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border: 3px solid #e2e8f0;
   border-top-color: #3b82f6;
   border-radius: 50%;
@@ -287,20 +287,20 @@ const toggleSidebar = () => {
 
 .error-banner {
   position: absolute;
-  bottom: 16px;
+  bottom: 12px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
+  gap: 6px;
+  padding: 8px 12px;
   background: #fee2e2;
   border: 1px solid #fca5a5;
-  border-radius: 8px;
+  border-radius: 6px;
   color: #dc2626;
-  font-size: 14px;
+  font-size: 12px;
   box-shadow: 0 2px 4px rgba(220, 38, 38, 0.1);
-  max-width: calc(100% - 32px);
+  max-width: calc(100% - 24px);
 }
 
 /* Responsive Design */
@@ -314,15 +314,11 @@ const toggleSidebar = () => {
   .journal-sidebar {
     width: 100%;
     min-width: auto;
-    max-height: 300px;
+    max-height: 250px;
   }
 
   .journal-editor-panel {
     min-height: 300px;
-  }
-
-  .journal-header {
-    flex-direction: row;
   }
 
   .btn-text {
@@ -330,42 +326,32 @@ const toggleSidebar = () => {
   }
 
   .btn-new-note {
-    padding: 8px;
-  }
-
-  .sidebar-toggle-btn {
-    top: 8px;
-    left: 8px;
+    padding: 5px;
   }
 }
 
 @media (max-width: 480px) {
   .journal-container {
-    gap: 8px;
+    gap: 6px;
   }
 
   .journal-sidebar {
-    padding: 12px;
-    border-radius: 8px;
+    padding: 8px;
+    border-radius: 6px;
   }
 
   .journal-editor-panel {
-    border-radius: 8px;
+    border-radius: 6px;
   }
 
   .journal-header h3 {
-    font-size: 14px;
-  }
-
-  .btn-new-note {
-    padding: 6px 8px;
-    font-size: 11px;
+    font-size: 12px;
   }
 }
 
 /* Scrollbar Styling */
 .journal-sidebar::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
 
 .journal-sidebar::-webkit-scrollbar-track {
