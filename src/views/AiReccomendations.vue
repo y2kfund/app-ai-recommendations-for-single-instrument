@@ -85,13 +85,13 @@ const handleClearAll = async () => {
             :class="['tab', { active: activeTab === 'analyst' }]"
             @click="activeTab = 'analyst'"
           >
-            🤖 Analyst
+            Analyst
           </button>
           <button
             :class="['tab', { active: activeTab === 'journal' }]"
             @click="activeTab = 'journal'"
           >
-            📝 Journal
+            Journal
           </button>
         </div>
       </div>
@@ -169,8 +169,6 @@ const handleClearAll = async () => {
 .tabs {
   display: flex;
   gap: 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding-bottom: 8px;
 }
 
 .tab {
