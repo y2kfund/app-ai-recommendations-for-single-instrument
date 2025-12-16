@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { onMounted, watch } from 'vue'
+import { onMounted, watch, ref } from 'vue'
 import { useAiChat } from '../composables/useAiChat'
 import ConversationTimeline from '../components/ConversationTimeline.vue'
 import ChatInput from '../components/ChatInput.vue'
+import Journal from '../components/Journal.vue'
 
 interface AiRecommendationsProps {
   symbolRoot: string
@@ -10,9 +11,11 @@ interface AiRecommendationsProps {
 }
 
 const props = withDefaults(defineProps<AiRecommendationsProps>(), {
-  userId: null,
-  symbolRoot: ''
+  userId: '67e578fd-2cf7-48a4-b028-a11a3f89bb9b',
+  symbolRoot: 'META'
 })
+
+const activeTab = ref<'analyst' | 'journal'>('analyst')
 
 const {
   conversations,
@@ -46,7 +49,7 @@ watch(
 
 const handleSubmit = async (question: string) => {
   try {
-    await askQuestion(question, true) // Always include screenshot
+    await askQuestion(question, true)
   } catch (err) {
     console.error('Failed to ask question:', err)
   }
@@ -77,10 +80,21 @@ const handleClearAll = async () => {
   <div class="ai-recommendation-box">
     <div class="recommendation-header">
       <div class="header-content">
-        <h2>🤖 Analyst</h2>
-        <!--span class="symbol-badge">{{ symbolRoot }}</span-->
+        <div class="tabs">
+          <button
+            :class="['tab', { active: activeTab === 'analyst' }]"
+            @click="activeTab = 'analyst'"
+          >
+            🤖 Analyst
+          </button>
+          <button
+            :class="['tab', { active: activeTab === 'journal' }]"
+            @click="activeTab = 'journal'"
+          >
+            📝 Journal
+          </button>
+        </div>
       </div>
-      <!--p class="header-subtitle">Get AI-powered analysis and recommendations for your positions</p-->
     </div>
 
     <div v-if="!userId" class="error-state">
@@ -90,7 +104,7 @@ const handleClearAll = async () => {
         <line x1="12" y1="16" x2="12.01" y2="16"/>
       </svg>
       <h3>Authentication Required</h3>
-      <p>Please log in to access AI recommendations</p>
+      <p>Please log in to access this feature</p>
     </div>
 
     <div v-else-if="!symbolRoot" class="error-state">
@@ -104,31 +118,42 @@ const handleClearAll = async () => {
     </div>
 
     <div v-else class="recommendation-content">
-      <ConversationTimeline
-        :conversations="conversations"
-        :is-loading="isLoading"
-        @delete="handleDelete"
-        @clear-all="handleClearAll"
-      />
+      <!-- Analyst Tab -->
+      <div v-show="activeTab === 'analyst'">
+        <ConversationTimeline
+          :conversations="conversations"
+          :is-loading="isLoading"
+          @delete="handleDelete"
+          @clear-all="handleClearAll"
+        />
 
-      <ChatInput
-        :disabled="!userId || !symbolRoot || isCapturing"
-        :is-processing="isProcessing || isCapturing"
-        @submit="handleSubmit"
-      />
+        <ChatInput
+          :disabled="!userId || !symbolRoot || isCapturing"
+          :is-processing="isProcessing || isCapturing"
+          @submit="handleSubmit"
+        />
 
-      <div v-if="error" class="error-banner">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"/>
-          <line x1="12" y1="8" x2="12" y2="12"/>
-          <line x1="12" y1="16" x2="12.01" y2="16"/>
-        </svg>
-        <span>{{ error }}</span>
+        <div v-if="error" class="error-banner">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <span>{{ error }}</span>
+        </div>
+
+        <div v-if="isCapturing" class="capture-banner">
+          <div class="loading-spinner-small"></div>
+          <span>📸 Capturing screenshot...</span>
+        </div>
       </div>
 
-      <div v-if="isCapturing" class="capture-banner">
-        <div class="loading-spinner-small"></div>
-        <span>📸 Capturing screenshot...</span>
+      <!-- Journal Tab -->
+      <div v-show="activeTab === 'journal'">
+        <Journal
+          :user-id="userId"
+          :symbol-root="symbolRoot"
+        />
       </div>
     </div>
   </div>
@@ -140,4 +165,34 @@ const handleClearAll = async () => {
 
 <style scoped>
 @import '../styles/scoped-styles.css';
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 8px;
+}
+
+.tab {
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.tab:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.tab.active {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.5);
+  color: #fff;
+}
 </style>
