@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useJournal } from '../composables/useJournal'
 import JournalTree from './JournalTree.vue'
 import JournalEditor from './JournalEditor.vue'
@@ -24,6 +24,8 @@ const {
   toggleCollapse
 } = useJournal(props.userId, props.symbolRoot)
 
+const isSidebarVisible = ref(false)
+
 const handleCreateEntry = async (parentId: string | null = null) => {
   await createEntry('New Note', parentId)
 }
@@ -41,11 +43,26 @@ const handleDeleteEntry = async (id: string) => {
 const handleToggle = async (id: string) => {
   await toggleCollapse(id)
 }
+
+const toggleSidebar = () => {
+  isSidebarVisible.value = !isSidebarVisible.value
+}
 </script>
 
 <template>
   <div class="journal-container">
-    <div class="journal-sidebar">
+    <button 
+      class="sidebar-toggle-btn" 
+      @click="toggleSidebar"
+      :title="isSidebarVisible ? 'Hide notes' : 'Show notes'"
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+        <line x1="9" y1="3" x2="9" y2="21"/>
+      </svg>
+    </button>
+
+    <div v-if="isSidebarVisible" class="journal-sidebar">
       <div class="journal-header">
         <h3>📓 Notes</h3>
         <button class="btn-new-note" @click="handleCreateEntry(null)">
@@ -73,7 +90,7 @@ const handleToggle = async (id: string) => {
       />
     </div>
 
-    <div class="journal-editor-panel">
+    <div class="journal-editor-panel" :class="isSidebarVisible ? `sidebar-visible` : `sidebar-hidden`">
       <JournalEditor
         v-if="selectedEntry"
         :entry="selectedEntry"
@@ -111,6 +128,35 @@ const handleToggle = async (id: string) => {
   position: relative;
 }
 
+.sidebar-toggle-btn {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 10;
+  padding: 8px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-toggle-btn:hover {
+  background: #f8f9fa;
+  border-color: #cbd5e1;
+  color: #1e293b;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+}
+
+.sidebar-toggle-btn:active {
+  transform: scale(0.95);
+}
+
 .journal-sidebar {
   width: 280px;
   min-width: 200px;
@@ -120,6 +166,18 @@ const handleToggle = async (id: string) => {
   overflow-y: auto;
   border: 1px solid #e2e8f0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  animation: slideIn 0.2s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .journal-header {
@@ -128,6 +186,7 @@ const handleToggle = async (id: string) => {
   align-items: center;
   margin-bottom: 16px;
   padding-bottom: 12px;
+  padding-left: 45px;
   border-bottom: 1px solid #e2e8f0;
   flex-wrap: wrap;
   gap: 8px;
@@ -255,7 +314,7 @@ const handleToggle = async (id: string) => {
   .journal-sidebar {
     width: 100%;
     min-width: auto;
-    max-height: 200px;
+    max-height: 300px;
   }
 
   .journal-editor-panel {
@@ -272,6 +331,11 @@ const handleToggle = async (id: string) => {
 
   .btn-new-note {
     padding: 8px;
+  }
+
+  .sidebar-toggle-btn {
+    top: 8px;
+    left: 8px;
   }
 }
 

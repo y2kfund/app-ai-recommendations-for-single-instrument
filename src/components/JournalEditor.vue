@@ -42,7 +42,7 @@ const handleBlur = () => {
         placeholder="Note title..."
         @blur="handleBlur"
       />
-      <div class="editor-toolbar">
+      <!--div class="editor-toolbar">
         <button
           :class="['toolbar-btn', { active: isBold }]"
           @click="isBold = !isBold; handleSave()"
@@ -53,7 +53,7 @@ const handleBlur = () => {
             <path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/>
           </svg>
         </button>
-      </div>
+      </div-->
     </div>
     
     <textarea
@@ -81,10 +81,14 @@ const handleBlur = () => {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 16px;
+  padding: 10px;
   border-bottom: 1px solid #e2e8f0;
   background: #f8f9fa;
   flex-wrap: wrap;
+}
+
+.journal-editor-panel.sidebar-hidden .editor-header {
+  padding-left: 55px;
 }
 
 .title-input {
