@@ -26,6 +26,7 @@
   ],
   "dependencies": {
     "html2canvas": "^1.4.1",
+    "marked": "^17.0.1",
     "vue": "^3.4.0",
     "vue-router": "^4.3.2"
   },
