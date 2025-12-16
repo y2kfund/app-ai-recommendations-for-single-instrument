@@ -41,7 +41,7 @@ export function useJournal(userId: string, symbolRoot: string) {
         .from('journal_entries')
         .select('*')
         .eq('user_id', userId)
-        .eq('symbol_root', symbolRoot)
+        //.eq('symbol_root', symbolRoot)
         .order('order_index', { ascending: true })
 
       if (fetchError) throw fetchError
