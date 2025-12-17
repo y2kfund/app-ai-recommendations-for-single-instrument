@@ -269,7 +269,6 @@ const syncScroll = (event: Event) => {
 .preview-overlay :deep(.md-h6) {
   font-weight: 600;
   color: #1e293b;
-  display: inline-block;  
   letter-spacing: -0.022em;
 }
 

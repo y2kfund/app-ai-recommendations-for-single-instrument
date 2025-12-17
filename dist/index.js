@@ -14258,7 +14258,7 @@ const Ow = { class: "journal-tree" }, Lw = ["onClick"], Kw = ["onClick"], xw = {
       ])
     ]));
   }
-}), Zw = /* @__PURE__ */ Be(qw, [["__scopeId", "data-v-85197f2b"]]), zw = { class: "journal-container" }, AQ = ["title"], eQ = {
+}), Zw = /* @__PURE__ */ Be(qw, [["__scopeId", "data-v-6026de7d"]]), zw = { class: "journal-container" }, AQ = ["title"], eQ = {
   key: 0,
   class: "journal-sidebar"
 }, tQ = { class: "journal-header" }, rQ = {
