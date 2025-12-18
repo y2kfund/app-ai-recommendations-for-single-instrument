@@ -428,7 +428,7 @@ const insertImageUrl = () => {
 }
 
 .toolbar-btn {
-  padding: 6px 10px;
+  padding: 2px 5px;
   background: #ffffff;
   border: 1px solid #cbd5e1;
   border-radius: 4px;
@@ -436,7 +436,7 @@ const insertImageUrl = () => {
   transition: all 0.2s ease;
   font-size: 14px;
   color: #475569;
-  min-width: 32px;
+  width: auto;
 }
 
 .toolbar-btn:hover {
