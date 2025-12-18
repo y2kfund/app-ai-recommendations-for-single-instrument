@@ -25,9 +25,15 @@
     "dist"
   ],
   "dependencies": {
+    "@codemirror/commands": "^6.10.1",
+    "@codemirror/lang-markdown": "^6.5.0",
+    "@codemirror/theme-one-dark": "^6.1.3",
+    "@codemirror/view": "^6.39.4",
     "html2canvas": "^1.4.1",
+    "ink-mde": "^0.34.0",
     "marked": "^17.0.1",
     "vue": "^3.4.0",
+    "vue-codemirror": "^6.1.1",
     "vue-router": "^4.3.2"
   },
   "peerDependencies": {

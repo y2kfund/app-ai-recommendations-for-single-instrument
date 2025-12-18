@@ -7,6 +7,6 @@ declare const _default: import('vue').DefineComponent<JournalEditorProps, {}, {}
 }, string, import('vue').PublicProps, Readonly<JournalEditorProps> & Readonly<{
     onUpdate?: ((id: string, title: string, content: string, isBold: boolean) => any) | undefined;
 }>, {}, {}, {}, {}, string, import('vue').ComponentProvideOptions, false, {
-    textareaRef: HTMLTextAreaElement;
+    fileInput: HTMLInputElement;
 }, HTMLDivElement>;
 export default _default;
