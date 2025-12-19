@@ -1,6 +1,7 @@
 import { JournalEntry } from '../composables/useJournal';
 interface JournalEditorProps {
     entry: JournalEntry;
+    symbolRoot: string;
 }
 declare const _default: import('vue').DefineComponent<JournalEditorProps, {}, {}, {}, {}, import('vue').ComponentOptionsMixin, import('vue').ComponentOptionsMixin, {
     update: (id: string, title: string, content: string, isBold: boolean) => any;
@@ -8,5 +9,7 @@ declare const _default: import('vue').DefineComponent<JournalEditorProps, {}, {}
     onUpdate?: ((id: string, title: string, content: string, isBold: boolean) => any) | undefined;
 }>, {}, {}, {}, {}, string, import('vue').ComponentProvideOptions, false, {
     fileInput: HTMLInputElement;
+    pdfInput: HTMLInputElement;
+    editorContent: HTMLDivElement;
 }, HTMLDivElement>;
 export default _default;

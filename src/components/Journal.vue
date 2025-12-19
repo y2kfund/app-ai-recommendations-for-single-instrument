@@ -90,22 +90,24 @@ const toggleSidebar = () => {
       />
     </div>
 
-    <div class="journal-editor-panel" :class="isSidebarVisible ? `sidebar-visible` : `sidebar-hidden`">
+    <!-- Journal Editor -->
+    <div v-if="selectedEntry" class="journal-editor-container">
       <JournalEditor
-        v-if="selectedEntry"
         :entry="selectedEntry"
+        :symbol-root="props.symbolRoot"
         @update="handleUpdateEntry"
       />
-      <div v-else class="empty-state">
-        <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/>
-          <line x1="12" y1="18" x2="12" y2="12"/>
-          <line x1="9" y1="15" x2="15" y2="15"/>
-        </svg>
-        <h3>No Note Selected</h3>
-        <p>Select a note from the sidebar or create a new one</p>
-      </div>
+    </div>
+
+    <div v-else class="empty-state">
+      <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="12" y1="18" x2="12" y2="12"/>
+        <line x1="9" y1="15" x2="15" y2="15"/>
+      </svg>
+      <h3>No Note Selected</h3>
+      <p>Select a note from the sidebar or create a new one</p>
     </div>
 
     <div v-if="error" class="error-banner">
@@ -224,6 +226,16 @@ const toggleSidebar = () => {
 }
 
 .journal-editor-panel {
+  flex: 1;
+  min-width: 0;
+  background: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.journal-editor-container {
   flex: 1;
   min-width: 0;
   background: #ffffff;

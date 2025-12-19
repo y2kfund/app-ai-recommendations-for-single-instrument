@@ -9,6 +9,7 @@ import type { JournalEntry } from '../composables/useJournal'
 
 interface JournalEditorProps {
   entry: JournalEntry
+  symbolRoot: string
 }
 
 const props = defineProps<JournalEditorProps>()
@@ -23,8 +24,15 @@ const isBold = ref(props.entry.is_bold)
 const view = shallowRef<EditorView>()
 let updateTimeout: NodeJS.Timeout | null = null
 const fileInput = ref<HTMLInputElement | null>(null)
+const pdfInput = ref<HTMLInputElement | null>(null)
 const editorContent = ref<HTMLElement | null>(null)
 const isDragging = ref(false)
+const isUploadingPdf = ref(false)
+
+// Gitea configuration
+const GITEA_TOKEN = import.meta.env.VITE_GITEA_TOKEN
+const GITEA_HOST = import.meta.env.VITE_GITEA_HOST
+const GITEA_REPO = 'y2kfund' // Update this to match your repo name
 
 // Image widget for CodeMirror with delete button
 class ImageWidget extends WidgetType {
@@ -115,7 +123,121 @@ class ImageWidget extends WidgetType {
   }
 }
 
-// ViewPlugin to handle image decorations
+// PDF widget for CodeMirror with clickable link and delete button
+class PdfWidget extends WidgetType {
+  constructor(readonly fileName: string, readonly url: string, readonly from: number, readonly to: number, readonly view: EditorView) {
+    super()
+  }
+
+  eq(other: PdfWidget) {
+    return other.url === this.url && other.fileName === this.fileName
+  }
+
+  toDOM() {
+    const wrap = document.createElement('span')
+    wrap.className = 'cm-pdf-widget'
+    wrap.style.display = 'inline-block'
+    wrap.style.verticalAlign = 'middle'
+    wrap.style.margin = '4px 0'
+    
+    const pdfContainer = document.createElement('div')
+    pdfContainer.className = 'pdf-link-container'
+    pdfContainer.style.display = 'inline-flex'
+    pdfContainer.style.alignItems = 'center'
+    pdfContainer.style.gap = '8px'
+    pdfContainer.style.padding = '2px 5px'
+    //pdfContainer.style.background = 'rgba(239, 68, 68, 0.05)'
+    //pdfContainer.style.border = '1px solid rgba(239, 68, 68, 0.2)'
+    //pdfContainer.style.borderRadius = '6px'
+    pdfContainer.style.transition = 'all 0.2s ease'
+    pdfContainer.style.position = 'relative'
+    
+    // PDF icon
+    const icon = document.createElement('span')
+    icon.textContent = '📄'
+    //icon.style.fontSize = '20px'
+    
+    // PDF link with token parameter
+    const link = document.createElement('a')
+    const giteaToken = import.meta.env.VITE_GITEA_TOKEN
+    const urlWithToken = `${this.url}?token=${giteaToken}`
+    link.href = urlWithToken
+    link.textContent = this.fileName
+    link.target = '_blank'
+    link.rel = 'noopener noreferrer'
+    //link.style.color = '#ef4444'
+    link.style.textDecoration = 'none'
+    link.style.fontWeight = '500'
+    link.style.fontSize = '14px'
+    link.style.maxWidth = '300px'
+    link.style.overflow = 'hidden'
+    link.style.textOverflow = 'ellipsis'
+    link.style.whiteSpace = 'nowrap'
+    link.title = `Open ${this.fileName}`
+    
+    link.addEventListener('mouseenter', () => {
+      link.style.textDecoration = 'underline'
+    })
+    
+    link.addEventListener('mouseleave', () => {
+      link.style.textDecoration = 'none'
+    })
+    
+    // Delete button
+    const deleteBtn = document.createElement('button')
+    deleteBtn.innerHTML = '×'
+    deleteBtn.className = 'cm-pdf-delete-btn'
+    deleteBtn.style.marginLeft = 'auto'
+    deleteBtn.style.padding = '2px 8px'
+    deleteBtn.style.background = '#ef4444'
+    deleteBtn.style.color = '#ffffff'
+    deleteBtn.style.border = 'none'
+    deleteBtn.style.borderRadius = '4px'
+    deleteBtn.style.cursor = 'pointer'
+    deleteBtn.style.fontSize = '18px'
+    deleteBtn.style.fontWeight = 'bold'
+    deleteBtn.style.lineHeight = '1'
+    deleteBtn.style.opacity = '0'
+    deleteBtn.style.transition = 'opacity 0.2s ease'
+    deleteBtn.title = 'Delete PDF link'
+    
+    // Show delete button on hover
+    pdfContainer.addEventListener('mouseenter', () => {
+      deleteBtn.style.opacity = '1'
+      //pdfContainer.style.background = 'rgba(239, 68, 68, 0.1)'
+      //pdfContainer.style.borderColor = 'rgba(239, 68, 68, 0.4)'
+    })
+    
+    pdfContainer.addEventListener('mouseleave', () => {
+      deleteBtn.style.opacity = '0'
+      //pdfContainer.style.background = 'rgba(239, 68, 68, 0.05)'
+      //pdfContainer.style.borderColor = 'rgba(239, 68, 68, 0.2)'
+    })
+    
+    // Delete PDF link on click
+    deleteBtn.addEventListener('click', (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      this.view.dispatch({
+        changes: { from: this.from, to: this.to, insert: '' }
+      })
+      this.view.focus()
+    })
+    
+    pdfContainer.appendChild(icon)
+    pdfContainer.appendChild(link)
+    pdfContainer.appendChild(deleteBtn)
+    wrap.appendChild(pdfContainer)
+    return wrap
+  }
+
+  ignoreEvent(event: Event) {
+    // Allow click events on link and delete button
+    return event.type === 'mousedown'
+  }
+}
+
+// ViewPlugin to handle both image and PDF decorations
 const imagePlugin = ViewPlugin.fromClass(class {
   decorations: DecorationSet
 
@@ -132,24 +254,38 @@ const imagePlugin = ViewPlugin.fromClass(class {
   buildDecorations(view: EditorView): DecorationSet {
     const builder = new RangeSetBuilder<Decoration>()
     const doc = view.state.doc
-    const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g
     
-    // Scan entire document, not just visible ranges
+    // Match both image and PDF markdown patterns
+    const markdownRegex = /(!?\[([^\]]*)\]\(([^)]+)\))/g
+    
     const text = doc.toString()
     let match
     
-    while ((match = imageRegex.exec(text)) !== null) {
+    while ((match = markdownRegex.exec(text)) !== null) {
+      const fullMatch = match[1]
+      const isImage = fullMatch.startsWith('!')
+      const label = match[2]
+      const url = match[3]
       const start = match.index
-      const end = start + match[0].length
-      const alt = match[1]
-      const src = match[2]
+      const end = start + fullMatch.length
       
-      // Only show widget if it's a valid image URL or base64
-      if (src.startsWith('http') || src.startsWith('data:image')) {
-        const deco = Decoration.replace({
-          widget: new ImageWidget(src, alt, start, end, view)
-        })
-        builder.add(start, end, deco)
+      if (isImage) {
+        // Image widget
+        if (url.startsWith('http') || url.startsWith('data:image')) {
+          const deco = Decoration.replace({
+            widget: new ImageWidget(url, label, start, end, view)
+          })
+          builder.add(start, end, deco)
+        }
+      } else {
+        // PDF widget - check if it's a PDF link
+        if (url.includes('.pdf') || url.includes('journal-attachments')) {
+          const fileName = label || url.split('/').pop() || 'PDF File'
+          const deco = Decoration.replace({
+            widget: new PdfWidget(fileName, url, start, end, view)
+          })
+          builder.add(start, end, deco)
+        }
       }
     }
     
@@ -328,6 +464,195 @@ const handleImageUpload = async (event: Event) => {
   target.value = ''
 }
 
+// Helper function to get unique filename
+const getUniqueFileName = (originalName: string): string => {
+  const timestamp = new Date().getTime()
+  const lastDotIndex = originalName.lastIndexOf('.')
+  
+  if (lastDotIndex === -1) {
+    return `${originalName}_${timestamp}`
+  }
+  
+  const baseName = originalName.substring(0, lastDotIndex)
+  const ext = originalName.substring(lastDotIndex)
+  
+  return `${baseName}_${timestamp}${ext}`
+}
+
+// Ensure journal-attachments folder exists
+const ensureJournalAttachmentsFolder = async (): Promise<boolean> => {
+  const folderPath = `journal-attachments/${props.symbolRoot}`
+  //const folderPath = `journal-attachments`
+  
+  try {
+    // Check if folder exists
+    const checkResponse = await fetch(
+      `${GITEA_HOST}/api/v1/repos/associateattorney/${GITEA_REPO}/contents/${folderPath}`,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `token ${GITEA_TOKEN}`,
+          'Accept': 'application/json',
+        }
+      }
+    )
+    
+    if (!checkResponse.ok) {
+      // Create folder with .gitkeep
+      const createResponse = await fetch(
+        `${GITEA_HOST}/api/v1/repos/associateattorney/${GITEA_REPO}/contents/${folderPath}/.gitkeep`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `token ${GITEA_TOKEN}`,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            message: `Create journal-attachments folder for ${props.symbolRoot}`,
+            content: '',
+            branch: 'main'
+          })
+        }
+      )
+      
+      if (!createResponse.ok) {
+        throw new Error('Failed to create journal-attachments folder')
+      }
+      
+      console.log(`Created journal-attachments folder for ${props.symbolRoot}`)
+    }
+    
+    return true
+  } catch (error) {
+    console.error('Error ensuring journal-attachments folder:', error)
+    return false
+  }
+}
+
+// Upload PDF to Gitea
+const uploadPdfToGitea = async (file: File): Promise<string | null> => {
+  isUploadingPdf.value = true
+  
+  try {
+    // Ensure folder exists
+    const folderCreated = await ensureJournalAttachmentsFolder()
+    if (!folderCreated) {
+      alert('Failed to create attachments folder')
+      return null
+    }
+    
+    // Generate unique filename
+    const uniqueFileName = getUniqueFileName(file.name)
+    const uploadPath = `journal-attachments/${props.symbolRoot}/${uniqueFileName}`
+    
+    // Convert file to base64
+    const base64Content = await new Promise<string>((resolve) => {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        const base64 = (reader.result as string).split(',')[1]
+        resolve(base64)
+      }
+      reader.readAsDataURL(file)
+    })
+    
+    // Upload to Gitea
+    const response = await fetch(
+      `${GITEA_HOST}/api/v1/repos/associateattorney/${GITEA_REPO}/contents/${uploadPath}`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `token ${GITEA_TOKEN}`,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: `Upload ${uniqueFileName} to journal-attachments/${props.symbolRoot}`,
+          content: base64Content,
+          branch: 'main'
+        })
+      }
+    )
+    
+    if (!response.ok) {
+      throw new Error('Failed to upload PDF')
+    }
+    
+    const data = await response.json()
+    return data.content.download_url
+  } catch (error) {
+    console.error('Error uploading PDF:', error)
+    alert('Failed to upload PDF: ' + (error as Error).message)
+    return null
+  } finally {
+    isUploadingPdf.value = false
+  }
+}
+
+// Insert PDF link into editor
+const insertPdfLink = (fileName: string, downloadUrl: string) => {
+  if (!view.value) return
+  
+  const { from } = view.value.state.selection.main
+  // Changed format - removed emoji, just clean markdown link
+  const pdfMarkdown = `[${fileName}](${downloadUrl})\n\n`
+  
+  view.value.dispatch({
+    changes: { from, insert: pdfMarkdown },
+    selection: { anchor: from + pdfMarkdown.length }
+  })
+  
+  // Force decoration update
+  nextTick(() => {
+    view.value?.requestMeasure()
+  })
+  
+  view.value.focus()
+}
+
+// Trigger PDF upload
+const triggerPdfUpload = () => {
+  pdfInput.value?.click()
+}
+
+// Handle PDF upload
+const handlePdfUpload = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const files = target.files
+  
+  if (!files || files.length === 0) return
+  
+  const file = files[0]
+  
+  // Validate file type
+  if (file.type !== 'application/pdf') {
+    alert('Please select a PDF file')
+    target.value = ''
+    return
+  }
+  
+  // Upload to Gitea
+  const downloadUrl = await uploadPdfToGitea(file)
+  
+  if (downloadUrl) {
+    insertPdfLink(file.name, downloadUrl)
+  }
+  
+  // Reset input
+  target.value = ''
+}
+
+// Handle PDF drop
+const handlePdfDrop = async (file: File) => {
+  if (file.type !== 'application/pdf') return
+  
+  const downloadUrl = await uploadPdfToGitea(file)
+  
+  if (downloadUrl) {
+    insertPdfLink(file.name, downloadUrl)
+  }
+}
+
 // Drag and drop handlers
 const handleDragOver = (event: DragEvent) => {
   event.preventDefault()
@@ -349,10 +674,12 @@ const handleDrop = (event: DragEvent) => {
   const files = event.dataTransfer?.files
   if (!files || files.length === 0) return
   
-  // Process all dropped images
+  // Process all dropped files
   Array.from(files).forEach(file => {
     if (file.type.startsWith('image/')) {
       insertImage(file)
+    } else if (file.type === 'application/pdf') {
+      handlePdfDrop(file)
     }
   })
 }
@@ -434,6 +761,9 @@ const insertImageUrl = () => {
       <button @click="insertImageUrl" class="toolbar-btn" title="Insert Image URL">
         🌐
       </button>
+      <button @click="triggerPdfUpload" class="toolbar-btn" title="Upload PDF" :disabled="isUploadingPdf">
+        📄
+      </button>
       <button @click="insertCode" class="toolbar-btn" title="Inline Code">
         &lt;/&gt;
       </button>
@@ -463,10 +793,18 @@ const insertImageUrl = () => {
       @change="handleImageUpload"
     />
     
+    <input
+      ref="pdfInput"
+      type="file"
+      accept="application/pdf"
+      style="display: none"
+      @change="handlePdfUpload"
+    />
+    
     <div 
       ref="editorContent"
       class="editor-content"
-      :class="{ 'dragging': isDragging }"
+      :class="{ 'dragging': isDragging, 'uploading': isUploadingPdf }"
       @dragover="handleDragOver"
       @dragleave="handleDragLeave"
       @drop="handleDrop"
@@ -474,8 +812,14 @@ const insertImageUrl = () => {
     >
       <div v-if="isDragging" class="drop-overlay">
         <div class="drop-message">
-          <span class="drop-icon">🖼️</span>
-          <span>Drop image here</span>
+          <span class="drop-icon">🖼️ 📄</span>
+          <span>Drop image or PDF here</span>
+        </div>
+      </div>
+      <div v-if="isUploadingPdf" class="upload-overlay">
+        <div class="upload-message">
+          <span class="upload-icon">⏳</span>
+          <span>Uploading PDF...</span>
         </div>
       </div>
       <Codemirror
@@ -489,7 +833,7 @@ const insertImageUrl = () => {
     </div>
     
     <div class="editor-footer">
-      <span class="markdown-hint">💡 Markdown editor - Drag & drop or paste (Cmd+V) images • Click preview to open full size</span>
+      <span class="markdown-hint">💡 Markdown editor - Drag & drop or paste (Cmd+V) images • Upload PDFs • Click preview to open full size</span>
       <span class="updated-at">{{ new Date(entry.updated_at).toLocaleString() }}</span>
     </div>
   </div>
@@ -510,6 +854,7 @@ const insertImageUrl = () => {
   padding: 12px 16px;
   border-bottom: 1px solid #e2e8f0;
   background: #f8f9fa;
+  padding-left: 35px !important;
 }
 
 .title-input {
@@ -582,6 +927,11 @@ const insertImageUrl = () => {
   background: rgba(59, 130, 246, 0.05);
 }
 
+.editor-content.uploading {
+  pointer-events: none;
+  opacity: 0.6;
+}
+
 .drop-overlay {
   position: absolute;
   top: 0;
@@ -618,6 +968,56 @@ const insertImageUrl = () => {
   color: #3b82f6;
 }
 
+.upload-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(59, 130, 246, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001;
+}
+
+.upload-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 2px solid #3b82f6;
+}
+
+.upload-icon {
+  font-size: 48px;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.upload-message span:last-child {
+  font-size: 16px;
+  font-weight: 600;
+  color: #3b82f6;
+}
+
+.toolbar-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .editor-header {
@@ -641,5 +1041,24 @@ const insertImageUrl = () => {
 
 :deep(.cm-selectionBackground) {
   background-color: rgba(59, 130, 246, 0.2) !important;
+}
+
+/* PDF Widget Styles */
+:deep(.cm-pdf-widget) {
+  display: inline-block;
+  margin: 4px 0;
+}
+
+:deep(.pdf-link-container) {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+:deep(.cm-pdf-delete-btn:hover) {
+  background: #dc2626 !important;
+}
+.pdf-link-container {
+    line-height: 1rem;
 }
 </style>
