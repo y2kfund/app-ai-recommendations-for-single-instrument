@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, watch, ref } from 'vue'
+import { onMounted, watch, ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAiChat } from '../composables/useAiChat'
 import ConversationTimeline from '../components/ConversationTimeline.vue'
@@ -9,29 +9,61 @@ import Journal from '../components/Journal.vue'
 interface AiRecommendationsProps {
   symbolRoot: string
   userId?: string | null
+  // Make it controllable via v-model
+  defaultTab?: 'analyst' | 'journal'
 }
 
 const props = withDefaults(defineProps<AiRecommendationsProps>(), {
   userId: '67e578fd-2cf7-48a4-b028-a11a3f89bb9b',
-  symbolRoot: 'META'
+  symbolRoot: 'META',
+  defaultTab: 'analyst'
 })
 
-const route = useRoute()
-const router = useRouter()
+const emit = defineEmits<{
+  'update:defaultTab': [value: 'analyst' | 'journal']
+}>()
 
-// Initialize activeTab from URL params or default to 'analyst'
-const activeTab = ref<'analyst' | 'journal'>(
-  (route.query.analystJournalActiveTab as 'analyst' | 'journal') || 'analyst'
+// Initialize activeTab from prop
+const activeTab = ref<'analyst' | 'journal'>(props.defaultTab)
+
+// Watch prop changes
+watch(() => props.defaultTab, (newTab) => {
+  activeTab.value = newTab
+})
+
+// Emit changes to parent
+watch(activeTab, (newTab) => {
+  emit('update:defaultTab', newTab)
+})
+
+// Try to get router, but don't fail if it's not available
+let route: any = null
+let router: any = null
+
+try {
+  route = useRoute()
+  router = useRouter()
+} catch (error) {
+  console.log('Router not available, using component in standalone mode')
+}
+
+// Initialize activeTab from URL params (if router available) or prop default
+const urlActiveTab = ref<'analyst' | 'journal'>(
+  route?.query?.analystJournalActiveTab as 'analyst' | 'journal' || props.defaultTab
 )
 
-// Watch activeTab and update URL params
+// Watch activeTab and update URL params only if router is available
 watch(activeTab, (newTab) => {
-  router.replace({
-    query: {
-      ...route.query,
-      analystJournalActiveTab: newTab
-    }
-  })
+  if (router && route) {
+    router.replace({
+      query: {
+        ...route.query,
+        analystJournalActiveTab: newTab
+      }
+    }).catch(() => {
+      // Ignore navigation errors
+    })
+  }
 })
 
 const {

@@ -1,9 +1,15 @@
 interface AiRecommendationsProps {
     symbolRoot: string;
     userId?: string | null;
+    defaultTab?: 'analyst' | 'journal';
 }
-declare const _default: import('vue').DefineComponent<AiRecommendationsProps, {}, {}, {}, {}, import('vue').ComponentOptionsMixin, import('vue').ComponentOptionsMixin, {}, string, import('vue').PublicProps, Readonly<AiRecommendationsProps> & Readonly<{}>, {
+declare const _default: import('vue').DefineComponent<AiRecommendationsProps, {}, {}, {}, {}, import('vue').ComponentOptionsMixin, import('vue').ComponentOptionsMixin, {
+    "update:defaultTab": (value: "analyst" | "journal") => any;
+}, string, import('vue').PublicProps, Readonly<AiRecommendationsProps> & Readonly<{
+    "onUpdate:defaultTab"?: ((value: "analyst" | "journal") => any) | undefined;
+}>, {
     symbolRoot: string;
     userId: string | null;
+    defaultTab: "analyst" | "journal";
 }, {}, {}, {}, string, import('vue').ComponentProvideOptions, false, {}, HTMLDivElement>;
 export default _default;

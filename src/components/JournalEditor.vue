@@ -86,6 +86,7 @@ class ImageWidget extends WidgetType {
     deleteBtn.style.opacity = '0'
     deleteBtn.style.transition = 'opacity 0.2s ease'
     deleteBtn.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.2)'
+    deleteBtn.style.width = 'auto'
     deleteBtn.title = 'Delete image'
     
     // Show delete button on hover
@@ -169,8 +170,8 @@ class PdfWidget extends WidgetType {
     link.style.textDecoration = 'none'
     link.style.fontWeight = '500'
     link.style.fontSize = '14px'
-    link.style.maxWidth = '300px'
-    link.style.overflow = 'hidden'
+    //link.style.maxWidth = '300px'
+    //link.style.overflow = 'hidden'
     link.style.textOverflow = 'ellipsis'
     link.style.whiteSpace = 'nowrap'
     link.title = `Open ${this.fileName}`
@@ -1057,6 +1058,7 @@ const insertImageUrl = () => {
 
 :deep(.cm-pdf-delete-btn:hover) {
   background: #dc2626 !important;
+  width: auto;
 }
 .pdf-link-container {
     line-height: 1rem;
