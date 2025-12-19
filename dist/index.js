@@ -37516,7 +37516,7 @@ const iM = /code|horizontalrule|html|link|comment|processing|escape|entity|image
       ])
     ]));
   }
-}), gM = /* @__PURE__ */ Mr(dM, [["__scopeId", "data-v-cfcd6846"]]), pM = { class: "journal-container" }, OM = ["title"], mM = {
+}), gM = /* @__PURE__ */ Mr(dM, [["__scopeId", "data-v-b891b083"]]), pM = { class: "journal-container" }, OM = ["title"], mM = {
   key: 0,
   class: "journal-sidebar"
 }, wM = { class: "journal-header" }, BM = {

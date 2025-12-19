@@ -1064,3 +1064,13 @@ const insertImageUrl = () => {
     line-height: 1rem;
 }
 </style>
+
+<style>
+.cm-gutters.cm-gutters-before {
+    background-color: transparent !important;
+    border: none !important;
+}
+.cm-gutter.cm-lineNumbers {
+    display: none !important;
+}
+</style>
