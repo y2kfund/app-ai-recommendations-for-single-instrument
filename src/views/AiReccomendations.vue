@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, watch, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useAiChat } from '../composables/useAiChat'
 import ConversationTimeline from '../components/ConversationTimeline.vue'
 import ChatInput from '../components/ChatInput.vue'
@@ -15,7 +16,23 @@ const props = withDefaults(defineProps<AiRecommendationsProps>(), {
   symbolRoot: 'META'
 })
 
-const activeTab = ref<'analyst' | 'journal'>('analyst')
+const route = useRoute()
+const router = useRouter()
+
+// Initialize activeTab from URL params or default to 'analyst'
+const activeTab = ref<'analyst' | 'journal'>(
+  (route.query.analystJournalActiveTab as 'analyst' | 'journal') || 'analyst'
+)
+
+// Watch activeTab and update URL params
+watch(activeTab, (newTab) => {
+  router.replace({
+    query: {
+      ...route.query,
+      analystJournalActiveTab: newTab
+    }
+  })
+})
 
 const {
   conversations,
