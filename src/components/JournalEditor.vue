@@ -23,6 +23,8 @@ const isBold = ref(props.entry.is_bold)
 const view = shallowRef<EditorView>()
 let updateTimeout: NodeJS.Timeout | null = null
 const fileInput = ref<HTMLInputElement | null>(null)
+const editorContent = ref<HTMLElement | null>(null)
+const isDragging = ref(false)
 
 // Image widget for CodeMirror
 class ImageWidget extends WidgetType {
@@ -229,32 +231,20 @@ const insertOrderedList = () => insertMarkdown('1. ')
 const insertQuote = () => insertMarkdown('> ')
 const insertTaskList = () => insertMarkdown('- [ ] ')
 
-// Image upload functionality
-const triggerImageUpload = () => {
-  fileInput.value?.click()
-}
-
-const handleImageUpload = async (event: Event) => {
-  const target = event.target as HTMLInputElement
-  const files = target.files
-  
-  if (!files || files.length === 0 || !view.value) return
-  
-  const file = files[0]
-  
-  // Validate file type
-  if (!file.type.startsWith('image/')) {
-    alert('Please select an image file')
+// Helper function to insert image into editor
+const insertImage = (file: File) => {
+  if (!file.type.startsWith('image/') || !view.value) {
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file')
+    }
     return
   }
   
-  // Convert to base64
   const reader = new FileReader()
   reader.onload = (e) => {
     const base64 = e.target?.result as string
     const altText = file.name.replace(/\.[^/.]+$/, '')
     
-    // Insert markdown image syntax
     if (view.value) {
       const { from } = view.value.state.selection.main
       const imageMarkdown = `![${altText}](${base64})\n\n`
@@ -264,7 +254,6 @@ const handleImageUpload = async (event: Event) => {
         selection: { anchor: from + imageMarkdown.length }
       })
       
-      // Force view update to rebuild decorations
       nextTick(() => {
         view.value?.requestMeasure()
       })
@@ -274,28 +263,71 @@ const handleImageUpload = async (event: Event) => {
   }
   
   reader.readAsDataURL(file)
+}
+
+// Image upload functionality
+const triggerImageUpload = () => {
+  fileInput.value?.click()
+}
+
+const handleImageUpload = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const files = target.files
+  
+  if (!files || files.length === 0) return
+  
+  insertImage(files[0])
   
   // Reset input
   target.value = ''
 }
 
-const insertImageUrl = () => {
-  const url = prompt('Enter image URL:')
-  if (url && view.value) {
-    const { from } = view.value.state.selection.main
-    const imageMarkdown = `![Image](${url})\n\n`
+// Drag and drop handlers
+const handleDragOver = (event: DragEvent) => {
+  event.preventDefault()
+  event.stopPropagation()
+  isDragging.value = true
+}
+
+const handleDragLeave = (event: DragEvent) => {
+  event.preventDefault()
+  event.stopPropagation()
+  isDragging.value = false
+}
+
+const handleDrop = (event: DragEvent) => {
+  event.preventDefault()
+  event.stopPropagation()
+  isDragging.value = false
+  
+  const files = event.dataTransfer?.files
+  if (!files || files.length === 0) return
+  
+  // Process all dropped images
+  Array.from(files).forEach(file => {
+    if (file.type.startsWith('image/')) {
+      insertImage(file)
+    }
+  })
+}
+
+// Paste handler for Cmd+V / Ctrl+V
+const handlePaste = (event: ClipboardEvent) => {
+  const items = event.clipboardData?.items
+  if (!items) return
+  
+  // Check if clipboard contains image
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i]
     
-    view.value.dispatch({
-      changes: { from, insert: imageMarkdown },
-      selection: { anchor: from + imageMarkdown.length }
-    })
-    
-    // Force view update to rebuild decorations
-    nextTick(() => {
-      view.value?.requestMeasure()
-    })
-    
-    view.value.focus()
+    if (item.type.startsWith('image/')) {
+      event.preventDefault()
+      const file = item.getAsFile()
+      if (file) {
+        insertImage(file)
+      }
+      break
+    }
   }
 }
 </script>
@@ -361,7 +393,21 @@ const insertImageUrl = () => {
       @change="handleImageUpload"
     />
     
-    <div class="editor-content">
+    <div 
+      ref="editorContent"
+      class="editor-content"
+      :class="{ 'dragging': isDragging }"
+      @dragover="handleDragOver"
+      @dragleave="handleDragLeave"
+      @drop="handleDrop"
+      @paste="handlePaste"
+    >
+      <div v-if="isDragging" class="drop-overlay">
+        <div class="drop-message">
+          <span class="drop-icon">🖼️</span>
+          <span>Drop image here</span>
+        </div>
+      </div>
       <Codemirror
         v-model="content"
         :extensions="extensions"
@@ -373,7 +419,7 @@ const insertImageUrl = () => {
     </div>
     
     <div class="editor-footer">
-      <span class="markdown-hint">💡 Markdown editor - Images show as previews, click to open full size</span>
+      <span class="markdown-hint">💡 Markdown editor - Drag & drop or paste (Cmd+V) images • Click preview to open full size</span>
       <span class="updated-at">{{ new Date(entry.updated_at).toLocaleString() }}</span>
     </div>
   </div>
@@ -458,28 +504,48 @@ const insertImageUrl = () => {
   flex: 1;
   overflow: hidden;
   background: #ffffff;
+  position: relative;
 }
 
-.editor-footer {
+.editor-content.dragging {
+  border: 2px dashed #3b82f6;
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.drop-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(59, 130, 246, 0.1);
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 8px 16px;
-  border-top: 1px solid #e2e8f0;
-  background: #f8f9fa;
-  flex-wrap: wrap;
-  gap: 8px;
+  justify-content: center;
+  z-index: 1000;
+  pointer-events: none;
 }
 
-.markdown-hint {
-  font-size: 11px;
-  color: #64748b;
-  font-weight: 500;
+.drop-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 2px dashed #3b82f6;
 }
 
-.updated-at {
-  font-size: 11px;
-  color: #64748b;
+.drop-icon {
+  font-size: 48px;
+}
+
+.drop-message span:last-child {
+  font-size: 16px;
+  font-weight: 600;
+  color: #3b82f6;
 }
 
 /* Responsive */
