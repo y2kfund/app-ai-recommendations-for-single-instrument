@@ -6,6 +6,8 @@ import { EditorView, keymap, Decoration, DecorationSet, WidgetType, ViewPlugin, 
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
 import { RangeSetBuilder } from '@codemirror/state'
 import type { JournalEntry } from '../composables/useJournal'
+import { syntaxHighlighting, HighlightStyle } from '@codemirror/language'
+import { tags } from '@lezer/highlight'
 
 interface JournalEditorProps {
   entry: JournalEntry
@@ -296,6 +298,16 @@ const imagePlugin = ViewPlugin.fromClass(class {
   decorations: v => v.decorations
 })
 
+// Custom syntax highlighting for markdown headings
+const markdownHighlighting = HighlightStyle.define([
+  { tag: tags.heading1, fontSize: '1.5em', fontWeight: 'bold', color: '#1e293b', lineHeight: '1.3' },
+  { tag: tags.heading2, fontSize: '1.3em', fontWeight: 'bold', color: '#334155', lineHeight: '1.35' },
+  { tag: tags.heading3, fontSize: '1.2em', fontWeight: '600', color: '#475569', lineHeight: '1.4' },
+  { tag: tags.heading4, fontSize: '1.1em', fontWeight: '600', color: '#64748b', lineHeight: '1.45' },
+  { tag: tags.heading5, fontSize: '1em', fontWeight: '600', color: '#64748b', lineHeight: '1.5' },
+  { tag: tags.heading6, fontSize: '0.95em', fontWeight: '600', color: '#64748b', lineHeight: '1.5' },
+])
+
 // CodeMirror extensions
 const extensions = [
   markdown(),
@@ -306,6 +318,7 @@ const extensions = [
   ]),
   EditorView.lineWrapping,
   imagePlugin,
+  syntaxHighlighting(markdownHighlighting),
   EditorView.theme({
     '&': {
       fontSize: '15px',
