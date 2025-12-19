@@ -26,9 +26,9 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const editorContent = ref<HTMLElement | null>(null)
 const isDragging = ref(false)
 
-// Image widget for CodeMirror
+// Image widget for CodeMirror with delete button
 class ImageWidget extends WidgetType {
-  constructor(readonly src: string, readonly alt: string) {
+  constructor(readonly src: string, readonly alt: string, readonly from: number, readonly to: number, readonly view: EditorView) {
     super()
   }
 
@@ -42,6 +42,12 @@ class ImageWidget extends WidgetType {
     wrap.style.display = 'inline-block'
     wrap.style.verticalAlign = 'top'
     wrap.style.width = '100%'
+    wrap.style.position = 'relative'
+    
+    const imgContainer = document.createElement('div')
+    imgContainer.style.position = 'relative'
+    imgContainer.style.display = 'inline-block'
+    imgContainer.style.width = '100%'
     
     const img = document.createElement('img')
     img.src = this.src
@@ -55,17 +61,57 @@ class ImageWidget extends WidgetType {
     img.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)'
     img.style.border = '1px solid #e2e8f0'
     
-    // Click to view full size
+    // Delete button
+    const deleteBtn = document.createElement('button')
+    deleteBtn.innerHTML = '🗑️'
+    deleteBtn.className = 'cm-image-delete-btn'
+    deleteBtn.style.position = 'absolute'
+    deleteBtn.style.top = '12px'
+    deleteBtn.style.right = '4px'
+    deleteBtn.style.padding = '6px 10px'
+    deleteBtn.style.background = 'rgba(239, 68, 68, 0.95)'
+    deleteBtn.style.color = '#ffffff'
+    deleteBtn.style.border = 'none'
+    deleteBtn.style.borderRadius = '4px'
+    deleteBtn.style.cursor = 'pointer'
+    deleteBtn.style.fontSize = '16px'
+    deleteBtn.style.opacity = '0'
+    deleteBtn.style.transition = 'opacity 0.2s ease'
+    deleteBtn.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.2)'
+    deleteBtn.title = 'Delete image'
+    
+    // Show delete button on hover
+    imgContainer.addEventListener('mouseenter', () => {
+      deleteBtn.style.opacity = '1'
+    })
+    
+    imgContainer.addEventListener('mouseleave', () => {
+      deleteBtn.style.opacity = '0'
+    })
+    
+    // Delete image on click
+    deleteBtn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      this.view.dispatch({
+        changes: { from: this.from, to: this.to, insert: '' }
+      })
+      this.view.focus()
+    })
+    
+    // Click image to view full size
     img.onclick = () => {
       window.open(this.src, '_blank')
     }
     
-    wrap.appendChild(img)
+    imgContainer.appendChild(img)
+    imgContainer.appendChild(deleteBtn)
+    wrap.appendChild(imgContainer)
     return wrap
   }
 
-  ignoreEvent() {
-    return false
+  ignoreEvent(event: Event) {
+    // Allow click events on delete button
+    return event.type === 'mousedown'
   }
 }
 
@@ -101,7 +147,7 @@ const imagePlugin = ViewPlugin.fromClass(class {
       // Only show widget if it's a valid image URL or base64
       if (src.startsWith('http') || src.startsWith('data:image')) {
         const deco = Decoration.replace({
-          widget: new ImageWidget(src, alt)
+          widget: new ImageWidget(src, alt, start, end, view)
         })
         builder.add(start, end, deco)
       }
@@ -328,6 +374,30 @@ const handlePaste = (event: ClipboardEvent) => {
       }
       break
     }
+  }
+}
+
+// Insert image from URL
+const insertImageUrl = () => {
+  const url = prompt('Enter image URL:')
+  if (!url) return
+  
+  const alt = prompt('Enter image description (optional):', '')
+  
+  if (view.value) {
+    const { from } = view.value.state.selection.main
+    const imageMarkdown = `![${alt || 'Image'}](${url})\n\n`
+    
+    view.value.dispatch({
+      changes: { from, insert: imageMarkdown },
+      selection: { anchor: from + imageMarkdown.length }
+    })
+    
+    nextTick(() => {
+      view.value?.requestMeasure()
+    })
+    
+    view.value.focus()
   }
 }
 </script>
