@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, shallowRef, onBeforeUnmount, nextTick } from 'vue'
+import { ref, watch, shallowRef, onBeforeUnmount, nextTick, onMounted } from 'vue'
 import { Codemirror } from 'vue-codemirror'
 import { markdown } from '@codemirror/lang-markdown'
 import { EditorView, keymap, Decoration, DecorationSet, WidgetType, ViewPlugin, ViewUpdate } from '@codemirror/view'
@@ -31,6 +31,33 @@ const pdfInput = ref<HTMLInputElement | null>(null)
 const editorContent = ref<HTMLElement | null>(null)
 const isDragging = ref(false)
 const isUploadingPdf = ref(false)
+
+// Broadcast Channel for cross-tab communication
+const broadcastChannel = new BroadcastChannel('journal-updates')
+
+// Listen for updates from other tabs
+onMounted(() => {
+  broadcastChannel.onmessage = (event) => {
+    const { entryId, title: newTitle, content: newContent, isBold: newIsBold } = event.data
+    
+    // Only update if it's the same entry but from another tab
+    if (entryId === props.entry.id) {
+      // Check if data is different to avoid infinite loops
+      if (title.value !== newTitle || content.value !== newContent || isBold.value !== newIsBold) {
+        title.value = newTitle
+        content.value = newContent
+        isBold.value = newIsBold
+        
+        // Force CodeMirror to update
+        if (view.value) {
+          nextTick(() => {
+            view.value?.requestMeasure()
+          })
+        }
+      }
+    }
+  }
+})
 
 // Gitea configuration
 const GITEA_TOKEN = import.meta.env.VITE_GITEA_TOKEN
@@ -407,6 +434,14 @@ const handleReady = (payload: { view: EditorView }) => {
 
 const emitUpdate = () => {
   emit('update', props.entry.id, title.value, content.value, isBold.value)
+  
+  // Broadcast update to other tabs
+  broadcastChannel.postMessage({
+    entryId: props.entry.id,
+    title: title.value,
+    content: content.value,
+    isBold: isBold.value
+  })
 }
 
 const handleContentChange = (value: string) => {
@@ -443,6 +478,8 @@ onBeforeUnmount(() => {
   if (updateTimeout) {
     clearTimeout(updateTimeout)
   }
+  // Close broadcast channel
+  broadcastChannel.close()
 })
 
 // Helper methods for toolbar actions
