@@ -31,6 +31,7 @@ const pdfInput = ref<HTMLInputElement | null>(null)
 const editorContent = ref<HTMLElement | null>(null)
 const isDragging = ref(false)
 const isUploadingPdf = ref(false)
+const isToolbarVisible = ref(false)
 
 // Broadcast Channel for cross-tab communication
 const broadcastChannel = new BroadcastChannel('journal-updates')
@@ -828,6 +829,13 @@ const insertImageUrl = () => {
 <template>
   <div class="journal-editor">
     <div class="editor-header">
+      <button 
+        @click="isToolbarVisible = !isToolbarVisible" 
+        class="toolbar-toggle-btn"
+        :title="isToolbarVisible ? 'Hide Toolbar' : 'Show Toolbar'"
+      >
+        {{ isToolbarVisible ? '▲' : '▼' }}
+      </button>
       <input
         v-model="title"
         class="title-input"
@@ -837,7 +845,7 @@ const insertImageUrl = () => {
       />
     </div>
     
-    <div class="editor-toolbar">
+    <div v-show="isToolbarVisible" class="editor-toolbar">
       <button @click="insertBold" class="toolbar-btn" title="Bold">
         <strong>B</strong>
       </button>
@@ -950,7 +958,29 @@ const insertImageUrl = () => {
   padding: 12px 16px;
   border-bottom: 1px solid #e2e8f0;
   background: #f8f9fa;
-  padding-left: 35px !important;
+  padding-left: 8px !important;
+}
+
+.toolbar-toggle-btn {
+  padding: 4px 8px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  color: #475569;
+  min-width: 32px;
+  width: auto;
+}
+
+.toolbar-toggle-btn:hover {
+  background-color: #e2e8f0;
+  border-color: #94a3b8;
+}
+
+.toolbar-toggle-btn:active {
+  background-color: #cbd5e1;
 }
 
 .title-input {

@@ -91,7 +91,7 @@ const toggleSidebar = () => {
     </div>
 
     <!-- Journal Editor -->
-    <div v-if="selectedEntry" class="journal-editor-container">
+    <div v-if="selectedEntry" class="journal-editor-container" :class="isSidebarVisible ? `visible` : `hidden`">
       <JournalEditor
         :entry="selectedEntry"
         :symbol-root="props.symbolRoot"
@@ -380,7 +380,7 @@ const toggleSidebar = () => {
 </style>
 
 <style>
-.journal-editor-panel.sidebar-hidden .editor-header {
-    padding-left: 36px;
+.journal-editor-container.hidden .editor-header {
+    padding-left: 36px !important;
 }
 </style>
