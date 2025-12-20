@@ -8,6 +8,7 @@ import { RangeSetBuilder } from '@codemirror/state'
 import type { JournalEntry } from '../composables/useJournal'
 import { syntaxHighlighting, HighlightStyle } from '@codemirror/language'
 import { tags } from '@lezer/highlight'
+import { display } from 'html2canvas/dist/types/css/property-descriptors/display'
 
 interface JournalEditorProps {
   entry: JournalEntry
@@ -298,6 +299,44 @@ const imagePlugin = ViewPlugin.fromClass(class {
   decorations: v => v.decorations
 })
 
+// Add this new ViewPlugin to hide heading marks
+const headingMarkPlugin = ViewPlugin.fromClass(class {
+  decorations: DecorationSet
+
+  constructor(view: EditorView) {
+    this.decorations = this.buildDecorations(view)
+  }
+
+  update(update: ViewUpdate) {
+    if (update.docChanged || update.viewportChanged) {
+      this.decorations = this.buildDecorations(update.view)
+    }
+  }
+
+  buildDecorations(view: EditorView): DecorationSet {
+    const builder = new RangeSetBuilder<Decoration>()
+    const doc = view.state.doc
+    
+    for (let i = 1; i <= doc.lines; i++) {
+      const line = doc.line(i)
+      const text = line.text
+      const match = text.match(/^(#{1,6})\s/)
+      
+      if (match) {
+        const start = line.from
+        const end = start + match[1].length + 1 // +1 for the space
+        builder.add(start, start + match[1].length, Decoration.mark({
+          class: 'cm-heading-mark'
+        }))
+      }
+    }
+    
+    return builder.finish()
+  }
+}, {
+  decorations: v => v.decorations
+})
+
 // Custom syntax highlighting for markdown headings
 const markdownHighlighting = HighlightStyle.define([
   { tag: tags.heading1, fontSize: '1.5em', fontWeight: 'bold', color: '#1e293b', lineHeight: '1.3' },
@@ -318,6 +357,7 @@ const extensions = [
   ]),
   EditorView.lineWrapping,
   imagePlugin,
+  headingMarkPlugin,
   syntaxHighlighting(markdownHighlighting),
   EditorView.theme({
     '&': {
@@ -338,6 +378,11 @@ const extensions = [
       display: 'inline-block',
       width: '100%',
       padding: '4px 0',
+    },
+    '.cm-heading-mark': {
+      opacity: '0.3',
+      fontSize: '0.8em',
+      display: 'none',
     },
   }),
 ]
