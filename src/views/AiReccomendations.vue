@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { onMounted, watch, ref, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
 import { useAiChat } from '../composables/useAiChat'
 import ConversationTimeline from '../components/ConversationTimeline.vue'
 import ChatInput from '../components/ChatInput.vue'
@@ -9,7 +8,6 @@ import Journal from '../components/Journal.vue'
 interface AiRecommendationsProps {
   symbolRoot: string
   userId?: string | null
-  // Make it controllable via v-model
   defaultTab?: 'analyst' | 'journal'
 }
 
@@ -23,47 +21,39 @@ const emit = defineEmits<{
   'update:defaultTab': [value: 'analyst' | 'journal']
 }>()
 
-// Initialize activeTab from prop
-const activeTab = ref<'analyst' | 'journal'>(props.defaultTab)
-
-// Watch prop changes
-watch(() => props.defaultTab, (newTab) => {
-  activeTab.value = newTab
-})
-
-// Emit changes to parent
-watch(activeTab, (newTab) => {
-  emit('update:defaultTab', newTab)
-})
-
-// Try to get router, but don't fail if it's not available
-let route: any = null
-let router: any = null
-
-try {
-  route = useRoute()
-  router = useRouter()
-} catch (error) {
-  console.log('Router not available, using component in standalone mode')
+// Helper functions for URL params (similar to Summary.vue)
+function parseTabFromUrl(): 'analyst' | 'journal' {
+  const url = new URL(window.location.href)
+  const tabParam = url.searchParams.get('analystJournalActiveTab')
+  if (tabParam === 'analyst' || tabParam === 'journal') {
+    return tabParam
+  }
+  return props.defaultTab
 }
 
-// Initialize activeTab from URL params (if router available) or prop default
-const urlActiveTab = ref<'analyst' | 'journal'>(
-  route?.query?.analystJournalActiveTab as 'analyst' | 'journal' || props.defaultTab
-)
+function writeTabToUrl(tab: 'analyst' | 'journal') {
+  const url = new URL(window.location.href)
+  url.searchParams.set('analystJournalActiveTab', tab)
+  window.history.replaceState({}, '', url.toString())
+}
 
-// Watch activeTab and update URL params only if router is available
+// Initialize activeTab from URL params or prop default
+const activeTab = ref<'analyst' | 'journal'>(parseTabFromUrl())
+
+// Update URL when tab changes
 watch(activeTab, (newTab) => {
-  if (router && route) {
-    router.replace({
-      query: {
-        ...route.query,
-        analystJournalActiveTab: newTab
-      }
-    }).catch(() => {
-      // Ignore navigation errors
-    })
-  }
+  emit('update:defaultTab', newTab)
+  writeTabToUrl(newTab)
+})
+
+// Listen for browser back/forward navigation
+onMounted(() => {
+  window.addEventListener('popstate', () => {
+    const newTab = parseTabFromUrl()
+    if (newTab !== activeTab.value) {
+      activeTab.value = newTab
+    }
+  })
 })
 
 const {
