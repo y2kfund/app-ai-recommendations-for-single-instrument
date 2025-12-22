@@ -133,7 +133,6 @@ const toggleSidebar = () => {
   min-height: 400px;
   gap: 8px;
   position: relative;
-  min-width: 600px;
 }
 
 .sidebar-toggle-btn {
@@ -324,7 +323,6 @@ const toggleSidebar = () => {
   .journal-container {
     flex-direction: column;
     height: auto;
-    min-height: 500px;
   }
 
   .journal-sidebar {

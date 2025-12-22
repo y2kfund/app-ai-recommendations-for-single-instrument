@@ -37683,7 +37683,7 @@ const iD = /code|horizontalrule|html|link|comment|processing|escape|entity|image
             onUpdate: f
           }, null, 8, ["entry", "symbol-root"]))
         ], 2)) : (J(), ie("div", yD, [...w[5] || (w[5] = [
-          WO('<svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" data-v-67c7be45><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" data-v-67c7be45></path><polyline points="14 2 14 8 20 8" data-v-67c7be45></polyline><line x1="12" y1="18" x2="12" y2="12" data-v-67c7be45></line><line x1="9" y1="15" x2="15" y2="15" data-v-67c7be45></line></svg><h3 data-v-67c7be45>No Note Selected</h3><p data-v-67c7be45>Select a note from the sidebar or create a new one</p>', 3)
+          WO('<svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" data-v-9ec47bc3><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" data-v-9ec47bc3></path><polyline points="14 2 14 8 20 8" data-v-9ec47bc3></polyline><line x1="12" y1="18" x2="12" y2="12" data-v-9ec47bc3></line><line x1="9" y1="15" x2="15" y2="15" data-v-9ec47bc3></line></svg><h3 data-v-9ec47bc3>No Note Selected</h3><p data-v-9ec47bc3>Select a note from the sidebar or create a new one</p>', 3)
         ])])),
         Je(n) ? (J(), ie("div", vD, [
           w[6] || (w[6] = C("svg", {
@@ -37717,7 +37717,7 @@ const iD = /code|horizontalrule|html|link|comment|processing|escape|entity|image
       ]);
     };
   }
-}), CD = /* @__PURE__ */ Dr(bD, [["__scopeId", "data-v-67c7be45"]]), SD = { class: "ai-recommendation-box" }, xD = { class: "recommendation-header" }, kD = { class: "header-content" }, UD = { class: "tabs" }, ED = {
+}), CD = /* @__PURE__ */ Dr(bD, [["__scopeId", "data-v-9ec47bc3"]]), SD = { class: "ai-recommendation-box" }, xD = { class: "recommendation-header" }, kD = { class: "header-content" }, UD = { class: "tabs" }, ED = {
   key: 0,
   class: "error-state"
 }, FD = {
