@@ -220,31 +220,42 @@ const handleClearAll = async () => {
 <style scoped>
 @import '../styles/scoped-styles.css';
 
+.recommendation-header {
+  background: transparent;
+  padding: 0 !important;
+}
+.header-content {
+    border-bottom: 1px solid #3b82f6;
+    margin-bottom: 6px;
+}
 .tabs {
   display: flex;
-  gap: 8px;
+  gap: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .tab {
-  padding: 8px 16px;
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
-  color: rgba(255, 255, 255, 0.7);
+  padding: 7px 20px !important;
+  border: none;
+  border-bottom: 1px solid #3b82f6;
   cursor: pointer;
   transition: all 0.2s ease;
   font-size: 14px;
   font-weight: 500;
-}
-
-.tab:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+  position: relative;
+  width: auto;
+  color: #000;
+  margin-bottom: -2px;
+  border-radius: 0;
+  background: #fff;
 }
 
 .tab.active {
-  background: rgba(59, 130, 246, 0.2);
-  border-color: rgba(59, 130, 246, 0.5);
-  color: #fff;
+    color: #3b82f6;
+    border: 1px solid #3b82f6;
+    font-weight: 600;
+    border-bottom: transparent;
+    border-radius: 6px 6px 0 0;
 }
 </style>

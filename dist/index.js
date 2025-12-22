@@ -37943,7 +37943,7 @@ const iD = /code|horizontalrule|html|link|comment|processing|escape|entity|image
       ])]))
     ]));
   }
-}), YD = /* @__PURE__ */ Dr(ID, [["__scopeId", "data-v-79075977"]]);
+}), YD = /* @__PURE__ */ Dr(ID, [["__scopeId", "data-v-c1365909"]]);
 export {
   YD as AiReccomendations,
   YD as default
