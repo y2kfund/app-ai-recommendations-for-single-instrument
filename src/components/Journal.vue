@@ -11,6 +11,10 @@ interface JournalProps {
 
 const props = defineProps<JournalProps>()
 
+const emit = defineEmits<{
+  'update:selectedEntry': [entry: any]
+}>()
+
 const {
   entries,
   selectedEntry,
@@ -23,6 +27,11 @@ const {
   selectEntry,
   toggleCollapse
 } = useJournal(props.userId, props.symbolRoot)
+
+// Emit selectedEntry changes to parent
+watch(selectedEntry, (newEntry) => {
+  emit('update:selectedEntry', newEntry)
+}, { immediate: true })
 
 const isSidebarVisible = ref(false)
 

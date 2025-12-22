@@ -69,6 +69,18 @@ const {
   clearAllConversations
 } = useAiChat(props.userId || '', props.symbolRoot)
 
+// Track selected journal entry
+const selectedJournalEntry = ref<any>(null)
+
+// Compute journal tab label
+const journalTabLabel = computed(() => {
+  return selectedJournalEntry.value?.title || 'Journal'
+})
+
+const handleSelectedEntryUpdate = (entry: any) => {
+  selectedJournalEntry.value = entry
+}
+
 // Load conversations on mount
 onMounted(async () => {
   if (props.userId && props.symbolRoot) {
@@ -82,6 +94,8 @@ watch(
   async ([newUserId, newSymbolRoot]) => {
     if (newUserId && newSymbolRoot) {
       await loadConversations()
+      // Reset selected entry when switching symbols
+      selectedJournalEntry.value = null
     }
   }
 )
@@ -130,7 +144,7 @@ const handleClearAll = async () => {
             :class="['tab', { active: activeTab === 'journal' }]"
             @click="activeTab = 'journal'"
           >
-            Journal
+            {{ journalTabLabel }}
           </button>
         </div>
       </div>
@@ -192,6 +206,7 @@ const handleClearAll = async () => {
         <Journal
           :user-id="userId"
           :symbol-root="symbolRoot"
+          @update:selected-entry="handleSelectedEntryUpdate"
         />
       </div>
     </div>
