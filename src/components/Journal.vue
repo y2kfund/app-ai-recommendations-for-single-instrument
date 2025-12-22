@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useJournal } from '../composables/useJournal'
 import JournalTree from './JournalTree.vue'
 import JournalEditor from './JournalEditor.vue'
@@ -44,6 +44,10 @@ const handleToggle = async (id: string) => {
   await toggleCollapse(id)
 }
 
+const handleSelectEntry = async (id: string) => {
+  await selectEntry(id)
+}
+
 const toggleSidebar = () => {
   isSidebarVisible.value = !isSidebarVisible.value
 }
@@ -83,7 +87,7 @@ const toggleSidebar = () => {
         v-else
         :entries="entries"
         :selected-id="selectedEntry?.id"
-        @select="selectEntry"
+        @select="handleSelectEntry"
         @create="handleCreateEntry"
         @delete="handleDeleteEntry"
         @toggle="handleToggle"
@@ -93,6 +97,7 @@ const toggleSidebar = () => {
     <!-- Journal Editor -->
     <div v-if="selectedEntry" class="journal-editor-container" :class="isSidebarVisible ? `visible` : `hidden`">
       <JournalEditor
+        :key="selectedEntry.id"
         :entry="selectedEntry"
         :symbol-root="props.symbolRoot"
         @update="handleUpdateEntry"
