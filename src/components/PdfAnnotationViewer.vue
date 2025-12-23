@@ -329,7 +329,7 @@ const handleSelectAnnotation = (annotation: Annotation | null) => {
 <style scoped>
 .pdf-annotation-viewer {
   position: fixed;
-  top: 0;
+  top: 65px;
   left: 0;
   right: 0;
   bottom: 0;

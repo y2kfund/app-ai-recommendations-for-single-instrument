@@ -56279,7 +56279,7 @@ const aJ = { class: "pdf-annotation-viewer" }, AJ = { class: "pdf-header" }, lJ 
       ])) : Ii("", !0)
     ]));
   }
-}), bJ = /* @__PURE__ */ ao(yJ, [["__scopeId", "data-v-eb767eeb"]]), vJ = { class: "journal-editor" }, BJ = { class: "editor-header" }, CJ = ["title"], QJ = { class: "editor-toolbar" }, SJ = ["disabled"], xJ = {
+}), bJ = /* @__PURE__ */ ao(yJ, [["__scopeId", "data-v-9d9541b6"]]), vJ = { class: "journal-editor" }, BJ = { class: "editor-header" }, CJ = ["title"], QJ = { class: "editor-toolbar" }, SJ = ["disabled"], xJ = {
   key: 0,
   class: "drop-overlay"
 }, EJ = {
