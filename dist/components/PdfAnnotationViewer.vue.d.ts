@@ -10,6 +10,5 @@ declare const _default: import('vue').DefineComponent<Props, {}, {}, {}, {}, imp
     onClose?: (() => any) | undefined;
 }>, {}, {}, {}, {}, string, import('vue').ComponentProvideOptions, false, {
     containerRef: HTMLDivElement;
-    pdfCanvas: HTMLCanvasElement;
 }, HTMLDivElement>;
 export default _default;

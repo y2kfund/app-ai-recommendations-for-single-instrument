@@ -56,6 +56,11 @@ const renderKey = ref(0) // Force re-render key
 const pages = ref<PageInfo[]>([])
 const pageCanvasRefs = ref<Map<number, HTMLCanvasElement>>(new Map())
 
+// Thumbnail state
+const thumbnailCanvasRefs = ref<Map<number, HTMLCanvasElement>>(new Map())
+const thumbnailsReady = ref(false)
+const showThumbnails = ref(true)
+
 // Annotation state
 const activeTool = ref<AnnotationTool>('select')
 const activeColor = ref('#FFEB3B')
@@ -101,6 +106,14 @@ const setCanvasRef = (pageNumber: number, el: HTMLCanvasElement | null) => {
   }
 }
 
+const setThumbnailCanvasRef = (pageNumber: number, el: HTMLCanvasElement | null) => {
+  if (el) {
+    thumbnailCanvasRefs.value.set(pageNumber, el)
+  } else {
+    thumbnailCanvasRefs.value.delete(pageNumber)
+  }
+}
+
 const loadPdf = async () => {
   isLoadingPdf.value = true
   pdfError.value = null
@@ -141,14 +154,45 @@ const loadPdf = async () => {
     // Small delay to ensure DOM is fully updated
     await new Promise(resolve => setTimeout(resolve, 100))
     
-    // Render all pages
+    // Render all pages and thumbnails
     await renderAllPages()
+    await renderAllThumbnails()
     
   } catch (err) {
     console.error('Error loading PDF:', err)
     pdfError.value = 'Failed to load PDF. Please try again.'
     isLoadingPdf.value = false
   }
+}
+
+const renderAllThumbnails = async () => {
+  const doc = pdfDoc.value
+  if (!doc) return
+
+  const thumbnailScale = 0.2 // Small scale for thumbnails
+
+  for (let i = 1; i <= doc.numPages; i++) {
+    const canvas = thumbnailCanvasRefs.value.get(i)
+    if (!canvas) continue
+
+    try {
+      const page = await doc.getPage(i)
+      const viewport = page.getViewport({ scale: thumbnailScale })
+
+      const context = canvas.getContext('2d')!
+      canvas.width = viewport.width
+      canvas.height = viewport.height
+
+      await page.render({
+        canvasContext: context,
+        viewport: viewport
+      }).promise
+    } catch (err) {
+      console.error('Error rendering thumbnail:', i, err)
+    }
+  }
+  
+  thumbnailsReady.value = true
 }
 
 const renderAllPages = async () => {
@@ -231,6 +275,7 @@ const goToPage = async (page: number) => {
   if (pageElement) {
     pageElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
+  currentVisiblePage.value = targetPage
 }
 
 // Track current visible page on scroll
@@ -312,6 +357,10 @@ const handleClose = () => {
 const handleSelectAnnotation = (annotation: Annotation | null) => {
   selectedAnnotation.value = annotation
 }
+
+const toggleThumbnails = () => {
+  showThumbnails.value = !showThumbnails.value
+}
 </script>
 
 <template>
@@ -332,6 +381,10 @@ const handleSelectAnnotation = (annotation: Annotation | null) => {
     />
 
     <div class="pdf-header">
+      <button class="toggle-thumbnails-btn" @click="toggleThumbnails" :title="showThumbnails ? 'Hide thumbnails' : 'Show thumbnails'">
+        <span v-if="showThumbnails">◀</span>
+        <span v-else>▶</span>
+      </button>
       <span class="pdf-title">📄 {{ fileName }}</span>
       <span v-if="isLoading || isSaving" class="saving-indicator">
         {{ isLoading ? 'Loading annotations...' : 'Saving...' }}
@@ -339,59 +392,89 @@ const handleSelectAnnotation = (annotation: Annotation | null) => {
       <span v-if="hasUnsavedChanges" class="unsaved-indicator">● Unsaved changes</span>
     </div>
 
-    <div ref="containerRef" class="pdf-container" @scroll="handleScroll">
-      <div v-if="isLoadingPdf" class="loading-overlay">
-        <div class="loading-spinner">
-          <span class="spinner-icon">⏳</span>
-          <span>Loading PDF...</span>
+    <div class="pdf-main-content">
+      <!-- Thumbnail Sidebar -->
+      <div v-if="showThumbnails" class="thumbnail-sidebar">
+        <div class="thumbnail-header">
+          <span>Pages</span>
+        </div>
+        <div class="thumbnail-list">
+          <div
+            v-for="pageInfo in pages"
+            :key="`thumb-${pageInfo.pageNumber}`"
+            class="thumbnail-item"
+            :class="{ active: currentVisiblePage === pageInfo.pageNumber }"
+            @click="goToPage(pageInfo.pageNumber)"
+          >
+            <div class="thumbnail-canvas-wrapper">
+              <canvas
+                :ref="(el) => setThumbnailCanvasRef(pageInfo.pageNumber, el as HTMLCanvasElement)"
+                class="thumbnail-canvas"
+              />
+              <div v-if="!thumbnailsReady" class="thumbnail-loading">
+                <span>Loading...</span>
+              </div>
+            </div>
+            <span class="thumbnail-page-number">{{ pageInfo.pageNumber }}</span>
+          </div>
         </div>
       </div>
 
-      <div v-else-if="pdfError" class="error-overlay">
-        <div class="error-message">
-          <span class="error-icon">❌</span>
-          <span>{{ pdfError }}</span>
-          <button @click="loadPdf" class="retry-btn">Retry</button>
+      <!-- PDF Container -->
+      <div ref="containerRef" class="pdf-container" @scroll="handleScroll">
+        <div v-if="isLoadingPdf" class="loading-overlay">
+          <div class="loading-spinner">
+            <span class="spinner-icon">⏳</span>
+            <span>Loading PDF...</span>
+          </div>
         </div>
-      </div>
 
-      <div v-else class="pdf-pages-container">
-        <!-- Render all pages -->
-        <div
-          v-for="pageInfo in pages"
-          :key="pageInfo.pageNumber"
-          :id="`pdf-page-${pageInfo.pageNumber}`"
-          class="pdf-page-wrapper"
-          :style="{ 
-            width: (pageInfo.width * scale) + 'px', 
-            height: (pageInfo.height * scale) + 'px'
-          }"
-        >
-          <!-- Page number indicator -->
-          <div class="page-number-badge">{{ pageInfo.pageNumber }}</div>
-          
-          <!-- PDF Canvas Layer (bottom) -->
-          <canvas 
-            :ref="(el) => setCanvasRef(pageInfo.pageNumber, el as HTMLCanvasElement)" 
-            class="pdf-canvas" 
-          />
-          
-          <!-- Annotation Canvas Layer (top) -->
-          <PdfAnnotationCanvas
-            v-if="pageInfo.isReady && pageInfo.width > 0 && pageInfo.height > 0"
-            :key="`canvas-${pageInfo.pageNumber}-${renderKey}`"
-            :width="pageInfo.width"
-            :height="pageInfo.height"
-            :scale="scale"
-            :active-tool="activeTool"
-            :active-color="activeColor"
-            :annotations="getAnnotationsForPage(pageInfo.pageNumber)"
-            :page-number="pageInfo.pageNumber"
-            @add-annotation="(annotation) => handleAddAnnotation(pageInfo.pageNumber, annotation)"
-            @update-annotation="handleUpdateAnnotation"
-            @delete-annotation="handleDeleteAnnotation"
-            @select-annotation="handleSelectAnnotation"
-          />
+        <div v-else-if="pdfError" class="error-overlay">
+          <div class="error-message">
+            <span class="error-icon">❌</span>
+            <span>{{ pdfError }}</span>
+            <button @click="loadPdf" class="retry-btn">Retry</button>
+          </div>
+        </div>
+
+        <div v-else class="pdf-pages-container">
+          <!-- Render all pages -->
+          <div
+            v-for="pageInfo in pages"
+            :key="pageInfo.pageNumber"
+            :id="`pdf-page-${pageInfo.pageNumber}`"
+            class="pdf-page-wrapper"
+            :style="{ 
+              width: (pageInfo.width * scale) + 'px', 
+              height: (pageInfo.height * scale) + 'px'
+            }"
+          >
+            <!-- Page number indicator -->
+            <div class="page-number-badge">{{ pageInfo.pageNumber }}</div>
+            
+            <!-- PDF Canvas Layer (bottom) -->
+            <canvas 
+              :ref="(el) => setCanvasRef(pageInfo.pageNumber, el as HTMLCanvasElement)" 
+              class="pdf-canvas" 
+            />
+            
+            <!-- Annotation Canvas Layer (top) -->
+            <PdfAnnotationCanvas
+              v-if="pageInfo.isReady && pageInfo.width > 0 && pageInfo.height > 0"
+              :key="`canvas-${pageInfo.pageNumber}-${renderKey}`"
+              :width="pageInfo.width"
+              :height="pageInfo.height"
+              :scale="scale"
+              :active-tool="activeTool"
+              :active-color="activeColor"
+              :annotations="getAnnotationsForPage(pageInfo.pageNumber)"
+              :page-number="pageInfo.pageNumber"
+              @add-annotation="(annotation) => handleAddAnnotation(pageInfo.pageNumber, annotation)"
+              @update-annotation="handleUpdateAnnotation"
+              @delete-annotation="handleDeleteAnnotation"
+              @select-annotation="handleSelectAnnotation"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -438,6 +521,22 @@ const handleSelectAnnotation = (annotation: Annotation | null) => {
   border-bottom: 1px solid #334155;
 }
 
+.toggle-thumbnails-btn {
+  padding: 6px 10px;
+  background: #334155;
+  color: #e2e8f0;
+  border: 1px solid #475569;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  width: auto;
+  transition: all 0.2s;
+}
+
+.toggle-thumbnails-btn:hover {
+  background: #475569;
+}
+
 .pdf-title {
   color: #e2e8f0;
   font-weight: 600;
@@ -458,6 +557,99 @@ const handleSelectAnnotation = (annotation: Annotation | null) => {
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
+}
+
+.pdf-main-content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* Thumbnail Sidebar Styles */
+.thumbnail-sidebar {
+  width: 160px;
+  min-width: 160px;
+  background: #1e293b;
+  border-right: 1px solid #334155;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.thumbnail-header {
+  padding: 12px 16px;
+  background: #0f172a;
+  border-bottom: 1px solid #334155;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.thumbnail-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.thumbnail-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.thumbnail-item:hover {
+  background: #334155;
+}
+
+.thumbnail-item.active {
+  background: #1e3a5f;
+  border-color: #3b82f6;
+}
+
+.thumbnail-canvas-wrapper {
+  position: relative;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.thumbnail-canvas {
+  display: block;
+  max-width: 120px;
+  height: auto;
+}
+
+.thumbnail-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.9);
+  font-size: 10px;
+  color: #64748b;
+}
+
+.thumbnail-page-number {
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.thumbnail-item.active .thumbnail-page-number {
+  color: #60a5fa;
 }
 
 .pdf-container {
