@@ -17,6 +17,15 @@ interface Props {
   entryId: string
 }
 
+interface PageInfo {
+  pageNumber: number
+  width: number
+  height: number
+  canvas: HTMLCanvasElement | null
+  isRendered: boolean
+  isReady: boolean
+}
+
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
@@ -36,18 +45,16 @@ const {
 
 // PDF state - use shallowRef for PDF.js objects to prevent Vue reactivity issues
 const pdfDoc = shallowRef<PDFDocumentProxy | null>(null)
-const currentPage = ref(1)
 const totalPages = ref(0)
 const scale = ref(1)
-const pageWidth = ref(0)
-const pageHeight = ref(0)
-const pdfCanvas = ref<HTMLCanvasElement | null>(null)
 const containerRef = ref<HTMLDivElement | null>(null)
 const isLoadingPdf = ref(true)
 const pdfError = ref<string | null>(null)
-const isRendering = ref(false)
-const isPdfReady = ref(false)
 const renderKey = ref(0) // Force re-render key
+
+// Page state for all pages
+const pages = ref<PageInfo[]>([])
+const pageCanvasRefs = ref<Map<number, HTMLCanvasElement>>(new Map())
 
 // Annotation state
 const activeTool = ref<AnnotationTool>('select')
@@ -56,11 +63,19 @@ const selectedAnnotation = ref<Annotation | null>(null)
 const isSaving = ref(false)
 const hasUnsavedChanges = ref(false)
 
+// Current visible page (for toolbar display)
+const currentVisiblePage = ref(1)
+
 // Computed URL with token
 const pdfUrlWithToken = computed(() => {
   const giteaToken = import.meta.env.VITE_GITEA_TOKEN
   return `${props.pdfUrl}?token=${giteaToken}`
 })
+
+// Get annotations for a specific page
+const getAnnotationsForPage = (pageNumber: number) => {
+  return annotations.value.filter(a => a.page === pageNumber)
+}
 
 onMounted(async () => {
   await loadPdf()
@@ -74,19 +89,21 @@ onUnmounted(() => {
   }
 })
 
-watch(currentPage, async () => {
-  isPdfReady.value = false
-  await renderPage()
+watch(scale, async () => {
+  await renderAllPages()
 })
 
-watch(scale, async () => {
-  await renderPage()
-})
+const setCanvasRef = (pageNumber: number, el: HTMLCanvasElement | null) => {
+  if (el) {
+    pageCanvasRefs.value.set(pageNumber, el)
+  } else {
+    pageCanvasRefs.value.delete(pageNumber)
+  }
+}
 
 const loadPdf = async () => {
   isLoadingPdf.value = true
   pdfError.value = null
-  isPdfReady.value = false
 
   try {
     const loadingTask = pdfjsLib.getDocument({
@@ -99,17 +116,33 @@ const loadPdf = async () => {
     pdfDoc.value = doc
     totalPages.value = doc.numPages
     
-    // Set loading to false first so canvas element mounts
+    // Initialize page info for all pages
+    const pageInfos: PageInfo[] = []
+    for (let i = 1; i <= doc.numPages; i++) {
+      const page = await doc.getPage(i)
+      const viewport = page.getViewport({ scale: 1 })
+      pageInfos.push({
+        pageNumber: i,
+        width: viewport.width,
+        height: viewport.height,
+        canvas: null,
+        isRendered: false,
+        isReady: false
+      })
+    }
+    pages.value = pageInfos
+    
+    // Set loading to false first so canvas elements mount
     isLoadingPdf.value = false
     
-    // Wait for canvas to be available in DOM
+    // Wait for canvas elements to be available in DOM
     await nextTick()
     
     // Small delay to ensure DOM is fully updated
-    await new Promise(resolve => setTimeout(resolve, 50))
+    await new Promise(resolve => setTimeout(resolve, 100))
     
-    // Render the first page
-    await renderPage()
+    // Render all pages
+    await renderAllPages()
     
   } catch (err) {
     console.error('Error loading PDF:', err)
@@ -118,34 +151,48 @@ const loadPdf = async () => {
   }
 }
 
-const renderPage = async () => {
+const renderAllPages = async () => {
   const doc = pdfDoc.value
-  const canvas = pdfCanvas.value
+  if (!doc) return
+
+  // Mark all pages as not ready during re-render
+  pages.value.forEach(p => {
+    p.isReady = false
+  })
+
+  // Render each page
+  for (let i = 0; i < pages.value.length; i++) {
+    const pageInfo = pages.value[i]
+    await renderPage(pageInfo.pageNumber)
+  }
+  
+  // Increment render key to force annotation canvas updates
+  renderKey.value++
+}
+
+const renderPage = async (pageNumber: number) => {
+  const doc = pdfDoc.value
+  const canvas = pageCanvasRefs.value.get(pageNumber)
   
   if (!doc || !canvas) {
-    console.log('Doc or canvas not ready', { doc: !!doc, canvas: !!canvas })
+    console.log('Doc or canvas not ready for page', pageNumber)
     return
   }
-  
-  // Wait if already rendering
-  if (isRendering.value) {
-    return
-  }
-
-  isRendering.value = true
-  isPdfReady.value = false
 
   try {
-    const page = await doc.getPage(currentPage.value)
+    const page = await doc.getPage(pageNumber)
     const viewport = page.getViewport({ scale: scale.value })
 
     // Get base dimensions (unscaled)
     const baseWidth = viewport.width / scale.value
     const baseHeight = viewport.height / scale.value
     
-    // Update dimensions
-    pageWidth.value = baseWidth
-    pageHeight.value = baseHeight
+    // Update page dimensions
+    const pageIndex = pages.value.findIndex(p => p.pageNumber === pageNumber)
+    if (pageIndex >= 0) {
+      pages.value[pageIndex].width = baseWidth
+      pages.value[pageIndex].height = baseHeight
+    }
 
     const context = canvas.getContext('2d')!
 
@@ -167,31 +214,63 @@ const renderPage = async () => {
 
     await page.render(renderContext).promise
     
-    // Increment render key to force annotation canvas update
-    renderKey.value++
-    
-    // Wait for DOM update
-    await nextTick()
-    
-    // Now mark as ready
-    isPdfReady.value = true
+    // Mark page as rendered and ready
+    if (pageIndex >= 0) {
+      pages.value[pageIndex].isRendered = true
+      pages.value[pageIndex].isReady = true
+    }
     
   } catch (err) {
-    console.error('Error rendering page:', err)
-  } finally {
-    isRendering.value = false
+    console.error('Error rendering page:', pageNumber, err)
   }
 }
 
 const goToPage = async (page: number) => {
-  const newPage = Math.max(1, Math.min(totalPages.value, page))
-  if (newPage !== currentPage.value) {
-    currentPage.value = newPage
+  const targetPage = Math.max(1, Math.min(totalPages.value, page))
+  const pageElement = document.getElementById(`pdf-page-${targetPage}`)
+  if (pageElement) {
+    pageElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 }
 
-const handleAddAnnotation = async (annotation: Omit<Annotation, 'id' | 'createdAt' | 'updatedAt'>) => {
-  const result = await addAnnotation(props.pdfUrl, props.symbolRoot, props.entryId, annotation)
+// Track current visible page on scroll
+const handleScroll = () => {
+  if (!containerRef.value) return
+  
+  const container = containerRef.value
+  const scrollTop = container.scrollTop
+  const containerHeight = container.clientHeight
+  
+  // Find the page that's most visible
+  let mostVisiblePage = 1
+  let maxVisibleArea = 0
+  
+  for (const pageInfo of pages.value) {
+    const pageElement = document.getElementById(`pdf-page-${pageInfo.pageNumber}`)
+    if (!pageElement) continue
+    
+    const rect = pageElement.getBoundingClientRect()
+    const containerRect = container.getBoundingClientRect()
+    
+    // Calculate visible area of this page
+    const visibleTop = Math.max(rect.top, containerRect.top)
+    const visibleBottom = Math.min(rect.bottom, containerRect.bottom)
+    const visibleArea = Math.max(0, visibleBottom - visibleTop)
+    
+    if (visibleArea > maxVisibleArea) {
+      maxVisibleArea = visibleArea
+      mostVisiblePage = pageInfo.pageNumber
+    }
+  }
+  
+  currentVisiblePage.value = mostVisiblePage
+}
+
+const handleAddAnnotation = async (pageNumber: number, annotation: Omit<Annotation, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const result = await addAnnotation(props.pdfUrl, props.symbolRoot, props.entryId, {
+    ...annotation,
+    page: pageNumber
+  })
   if (result) {
     hasUnsavedChanges.value = false
   }
@@ -240,7 +319,7 @@ const handleSelectAnnotation = (annotation: Annotation | null) => {
     <PdfAnnotationToolbar
       :active-tool="activeTool"
       :active-color="activeColor"
-      :current-page="currentPage"
+      :current-page="currentVisiblePage"
       :total-pages="totalPages"
       :scale="scale"
       @update:active-tool="activeTool = $event"
@@ -260,7 +339,7 @@ const handleSelectAnnotation = (annotation: Annotation | null) => {
       <span v-if="hasUnsavedChanges" class="unsaved-indicator">● Unsaved changes</span>
     </div>
 
-    <div ref="containerRef" class="pdf-container">
+    <div ref="containerRef" class="pdf-container" @scroll="handleScroll">
       <div v-if="isLoadingPdf" class="loading-overlay">
         <div class="loading-spinner">
           <span class="spinner-icon">⏳</span>
@@ -276,33 +355,44 @@ const handleSelectAnnotation = (annotation: Annotation | null) => {
         </div>
       </div>
 
-      <div 
-        v-else 
-        class="pdf-page-wrapper" 
-        :style="{ 
-          width: (pageWidth * scale) + 'px', 
-          height: (pageHeight * scale) + 'px'
-        }"
-      >
-        <!-- PDF Canvas Layer (bottom) -->
-        <canvas ref="pdfCanvas" class="pdf-canvas" />
-        
-        <!-- Annotation Canvas Layer (top) -->
-        <PdfAnnotationCanvas
-          v-if="isPdfReady && pageWidth > 0 && pageHeight > 0"
-          :key="`canvas-${currentPage}-${renderKey}`"
-          :width="pageWidth"
-          :height="pageHeight"
-          :scale="scale"
-          :active-tool="activeTool"
-          :active-color="activeColor"
-          :annotations="annotations"
-          :page-number="currentPage"
-          @add-annotation="handleAddAnnotation"
-          @update-annotation="handleUpdateAnnotation"
-          @delete-annotation="handleDeleteAnnotation"
-          @select-annotation="handleSelectAnnotation"
-        />
+      <div v-else class="pdf-pages-container">
+        <!-- Render all pages -->
+        <div
+          v-for="pageInfo in pages"
+          :key="pageInfo.pageNumber"
+          :id="`pdf-page-${pageInfo.pageNumber}`"
+          class="pdf-page-wrapper"
+          :style="{ 
+            width: (pageInfo.width * scale) + 'px', 
+            height: (pageInfo.height * scale) + 'px'
+          }"
+        >
+          <!-- Page number indicator -->
+          <div class="page-number-badge">{{ pageInfo.pageNumber }}</div>
+          
+          <!-- PDF Canvas Layer (bottom) -->
+          <canvas 
+            :ref="(el) => setCanvasRef(pageInfo.pageNumber, el as HTMLCanvasElement)" 
+            class="pdf-canvas" 
+          />
+          
+          <!-- Annotation Canvas Layer (top) -->
+          <PdfAnnotationCanvas
+            v-if="pageInfo.isReady && pageInfo.width > 0 && pageInfo.height > 0"
+            :key="`canvas-${pageInfo.pageNumber}-${renderKey}`"
+            :width="pageInfo.width"
+            :height="pageInfo.height"
+            :scale="scale"
+            :active-tool="activeTool"
+            :active-color="activeColor"
+            :annotations="getAnnotationsForPage(pageInfo.pageNumber)"
+            :page-number="pageInfo.pageNumber"
+            @add-annotation="(annotation) => handleAddAnnotation(pageInfo.pageNumber, annotation)"
+            @update-annotation="handleUpdateAnnotation"
+            @delete-annotation="handleDeleteAnnotation"
+            @select-annotation="handleSelectAnnotation"
+          />
+        </div>
       </div>
     </div>
 
@@ -375,9 +465,16 @@ const handleSelectAnnotation = (annotation: Annotation | null) => {
   overflow: auto;
   display: flex;
   justify-content: center;
-  align-items: flex-start;
   padding: 20px;
   background: #334155;
+}
+
+.pdf-pages-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding-bottom: 40px;
 }
 
 .pdf-page-wrapper {
@@ -385,6 +482,20 @@ const handleSelectAnnotation = (annotation: Annotation | null) => {
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
   background: white;
   flex-shrink: 0;
+}
+
+.page-number-badge {
+  position: absolute;
+  top: -28px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1e293b;
+  color: #94a3b8;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  z-index: 10;
 }
 
 .pdf-canvas {
