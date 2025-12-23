@@ -32,6 +32,10 @@
     "html2canvas": "^1.4.1",
     "ink-mde": "^0.34.0",
     "marked": "^17.0.1",
+    "mupdf-js": "^2.0.1",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^5.4.449",
+    "pspdfkit": "^2024.8.2",
     "vue": "^3.4.0",
     "vue-codemirror": "^6.1.1",
     "vue-router": "^4.3.2"

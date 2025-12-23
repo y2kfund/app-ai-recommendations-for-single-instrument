@@ -9,6 +9,7 @@ import type { JournalEntry } from '../composables/useJournal'
 import { syntaxHighlighting, HighlightStyle } from '@codemirror/language'
 import { tags } from '@lezer/highlight'
 import { display } from 'html2canvas/dist/types/css/property-descriptors/display'
+import PdfAnnotationViewer from './PdfAnnotationViewer.vue'
 
 interface JournalEditorProps {
   entry: JournalEntry
@@ -157,7 +158,14 @@ class ImageWidget extends WidgetType {
 
 // PDF widget for CodeMirror with clickable link and delete button
 class PdfWidget extends WidgetType {
-  constructor(readonly fileName: string, readonly url: string, readonly from: number, readonly to: number, readonly view: EditorView) {
+  constructor(
+    readonly fileName: string, 
+    readonly url: string, 
+    readonly from: number, 
+    readonly to: number, 
+    readonly view: EditorView,
+    readonly onOpenAnnotations: (url: string, fileName: string) => void
+  ) {
     super()
   }
 
@@ -178,34 +186,23 @@ class PdfWidget extends WidgetType {
     pdfContainer.style.alignItems = 'center'
     pdfContainer.style.gap = '8px'
     pdfContainer.style.padding = '2px 5px'
-    //pdfContainer.style.background = 'rgba(239, 68, 68, 0.05)'
-    //pdfContainer.style.border = '1px solid rgba(239, 68, 68, 0.2)'
-    //pdfContainer.style.borderRadius = '6px'
     pdfContainer.style.transition = 'all 0.2s ease'
     pdfContainer.style.position = 'relative'
     
     // PDF icon
     const icon = document.createElement('span')
     icon.textContent = '📄'
-    //icon.style.fontSize = '20px'
     
-    // PDF link with token parameter
+    // PDF link
     const link = document.createElement('a')
-    const giteaToken = import.meta.env.VITE_GITEA_TOKEN
-    const urlWithToken = `${this.url}?token=${giteaToken}`
-    link.href = urlWithToken
+    link.href = '#'
     link.textContent = this.fileName
-    link.target = '_blank'
-    link.rel = 'noopener noreferrer'
-    //link.style.color = '#ef4444'
     link.style.textDecoration = 'none'
     link.style.fontWeight = '500'
     link.style.fontSize = '14px'
-    //link.style.maxWidth = '300px'
-    //link.style.overflow = 'hidden'
     link.style.textOverflow = 'ellipsis'
     link.style.whiteSpace = 'nowrap'
-    link.title = `Open ${this.fileName}`
+    link.title = `Open ${this.fileName} with annotations`
     
     link.addEventListener('mouseenter', () => {
       link.style.textDecoration = 'underline'
@@ -213,6 +210,35 @@ class PdfWidget extends WidgetType {
     
     link.addEventListener('mouseleave', () => {
       link.style.textDecoration = 'none'
+    })
+    
+    // Open annotation viewer on click
+    link.addEventListener('click', (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      this.onOpenAnnotations(this.url, this.fileName)
+    })
+    
+    // Annotate button
+    const annotateBtn = document.createElement('button')
+    annotateBtn.innerHTML = '✏️'
+    annotateBtn.className = 'cm-pdf-annotate-btn'
+    annotateBtn.style.padding = '2px 6px'
+    annotateBtn.style.background = '#3b82f6'
+    annotateBtn.style.color = '#ffffff'
+    annotateBtn.style.border = 'none'
+    annotateBtn.style.borderRadius = '4px'
+    annotateBtn.style.cursor = 'pointer'
+    annotateBtn.style.fontSize = '12px'
+    annotateBtn.style.opacity = '0'
+    annotateBtn.style.transition = 'opacity 0.2s ease'
+    annotateBtn.title = 'Annotate PDF'
+    annotateBtn.style.width = 'auto'
+    
+    annotateBtn.addEventListener('click', (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      this.onOpenAnnotations(this.url, this.fileName)
     })
     
     // Delete button
@@ -232,18 +258,17 @@ class PdfWidget extends WidgetType {
     deleteBtn.style.opacity = '0'
     deleteBtn.style.transition = 'opacity 0.2s ease'
     deleteBtn.title = 'Delete PDF link'
+    deleteBtn.style.width = 'auto'
     
-    // Show delete button on hover
+    // Show buttons on hover
     pdfContainer.addEventListener('mouseenter', () => {
       deleteBtn.style.opacity = '1'
-      //pdfContainer.style.background = 'rgba(239, 68, 68, 0.1)'
-      //pdfContainer.style.borderColor = 'rgba(239, 68, 68, 0.4)'
+      annotateBtn.style.opacity = '1'
     })
     
     pdfContainer.addEventListener('mouseleave', () => {
       deleteBtn.style.opacity = '0'
-      //pdfContainer.style.background = 'rgba(239, 68, 68, 0.05)'
-      //pdfContainer.style.borderColor = 'rgba(239, 68, 68, 0.2)'
+      annotateBtn.style.opacity = '0'
     })
     
     // Delete PDF link on click
@@ -258,13 +283,13 @@ class PdfWidget extends WidgetType {
     
     pdfContainer.appendChild(icon)
     pdfContainer.appendChild(link)
+    //pdfContainer.appendChild(annotateBtn)
     pdfContainer.appendChild(deleteBtn)
     wrap.appendChild(pdfContainer)
     return wrap
   }
 
   ignoreEvent(event: Event) {
-    // Allow click events on link and delete button
     return event.type === 'mousedown'
   }
 }
@@ -314,7 +339,9 @@ const imagePlugin = ViewPlugin.fromClass(class {
         if (url.includes('.pdf') || url.includes('journal-attachments')) {
           const fileName = label || url.split('/').pop() || 'PDF File'
           const deco = Decoration.replace({
-            widget: new PdfWidget(fileName, url, start, end, view)
+            widget: new PdfWidget(fileName, url, start, end, view, (url, fileName) => {
+              openPdfWithAnnotations(url, fileName)
+            })
           })
           builder.add(start, end, deco)
         }
@@ -824,6 +851,24 @@ const insertImageUrl = () => {
     view.value.focus()
   }
 }
+
+// PDF Annotation Viewer state
+const showPdfViewer = ref(false)
+const currentPdfUrl = ref('')
+const currentPdfFileName = ref('')
+
+// Open PDF with annotation viewer
+const openPdfWithAnnotations = (url: string, fileName: string) => {
+  currentPdfUrl.value = url
+  currentPdfFileName.value = fileName
+  showPdfViewer.value = true
+}
+
+const closePdfViewer = () => {
+  showPdfViewer.value = false
+  currentPdfUrl.value = ''
+  currentPdfFileName.value = ''
+}
 </script>
 
 <template>
@@ -937,9 +982,19 @@ const insertImageUrl = () => {
     </div>
     
     <div class="editor-footer">
-      <span class="markdown-hint">💡 Markdown editor - Drag & drop or paste (Cmd+V) images • Upload PDFs • Click preview to open full size</span>
-      <span class="updated-at">{{ new Date(entry.updated_at).toLocaleString() }}</span>
+      <!--span class="markdown-hint">💡 Markdown editor - Drag & drop or paste (Cmd+V) images • Upload PDFs • Click preview to open full size</span-->
+      <!--span class="updated-at">{{ new Date(entry.updated_at).toLocaleString() }}</span-->
     </div>
+    
+    <!-- PDF Annotation Viewer Modal -->
+    <PdfAnnotationViewer
+      v-if="showPdfViewer"
+      :pdf-url="currentPdfUrl"
+      :file-name="currentPdfFileName"
+      :symbol-root="symbolRoot"
+      :entry-id="entry.id"
+      @close="closePdfViewer"
+    />
   </div>
 </template>
 
