@@ -401,6 +401,8 @@ const handleKeyDown = (e: KeyboardEvent) => {
   width: 100%;
   height: 100%;
   outline: none;
+  z-index: 2;
+  background: transparent;
 }
 
 .annotation-canvas {
@@ -408,6 +410,7 @@ const handleKeyDown = (e: KeyboardEvent) => {
   top: 0;
   left: 0;
   pointer-events: auto;
+  background: transparent;
 }
 
 .cursor-crosshair {

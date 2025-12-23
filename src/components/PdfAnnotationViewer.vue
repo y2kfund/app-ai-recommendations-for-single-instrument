@@ -46,6 +46,8 @@ const containerRef = ref<HTMLDivElement | null>(null)
 const isLoadingPdf = ref(true)
 const pdfError = ref<string | null>(null)
 const isRendering = ref(false)
+const isPdfReady = ref(false)
+const renderKey = ref(0) // Force re-render key
 
 // Annotation state
 const activeTool = ref<AnnotationTool>('select')
@@ -72,17 +74,19 @@ onUnmounted(() => {
   }
 })
 
-watch(currentPage, () => {
-  renderPage()
+watch(currentPage, async () => {
+  isPdfReady.value = false
+  await renderPage()
 })
 
-watch(scale, () => {
-  renderPage()
+watch(scale, async () => {
+  await renderPage()
 })
 
 const loadPdf = async () => {
   isLoadingPdf.value = true
   pdfError.value = null
+  isPdfReady.value = false
 
   try {
     const loadingTask = pdfjsLib.getDocument({
@@ -94,33 +98,67 @@ const loadPdf = async () => {
     const doc = await loadingTask.promise
     pdfDoc.value = doc
     totalPages.value = doc.numPages
+    
+    // Set loading to false first so canvas element mounts
+    isLoadingPdf.value = false
+    
+    // Wait for canvas to be available in DOM
+    await nextTick()
+    
+    // Small delay to ensure DOM is fully updated
+    await new Promise(resolve => setTimeout(resolve, 50))
+    
+    // Render the first page
     await renderPage()
+    
   } catch (err) {
     console.error('Error loading PDF:', err)
     pdfError.value = 'Failed to load PDF. Please try again.'
-  } finally {
     isLoadingPdf.value = false
   }
 }
 
 const renderPage = async () => {
   const doc = pdfDoc.value
-  if (!doc || !pdfCanvas.value || isRendering.value) return
+  const canvas = pdfCanvas.value
+  
+  if (!doc || !canvas) {
+    console.log('Doc or canvas not ready', { doc: !!doc, canvas: !!canvas })
+    return
+  }
+  
+  // Wait if already rendering
+  if (isRendering.value) {
+    return
+  }
 
   isRendering.value = true
+  isPdfReady.value = false
 
   try {
     const page = await doc.getPage(currentPage.value)
     const viewport = page.getViewport({ scale: scale.value })
 
-    pageWidth.value = viewport.width / scale.value
-    pageHeight.value = viewport.height / scale.value
+    // Get base dimensions (unscaled)
+    const baseWidth = viewport.width / scale.value
+    const baseHeight = viewport.height / scale.value
+    
+    // Update dimensions
+    pageWidth.value = baseWidth
+    pageHeight.value = baseHeight
 
-    const canvas = pdfCanvas.value
     const context = canvas.getContext('2d')!
 
+    // Set canvas dimensions to scaled size
     canvas.width = viewport.width
     canvas.height = viewport.height
+    
+    // Also set CSS dimensions to match
+    canvas.style.width = viewport.width + 'px'
+    canvas.style.height = viewport.height + 'px'
+
+    // Clear canvas before rendering
+    context.clearRect(0, 0, canvas.width, canvas.height)
 
     const renderContext = {
       canvasContext: context,
@@ -128,6 +166,16 @@ const renderPage = async () => {
     }
 
     await page.render(renderContext).promise
+    
+    // Increment render key to force annotation canvas update
+    renderKey.value++
+    
+    // Wait for DOM update
+    await nextTick()
+    
+    // Now mark as ready
+    isPdfReady.value = true
+    
   } catch (err) {
     console.error('Error rendering page:', err)
   } finally {
@@ -135,7 +183,7 @@ const renderPage = async () => {
   }
 }
 
-const goToPage = (page: number) => {
+const goToPage = async (page: number) => {
   const newPage = Math.max(1, Math.min(totalPages.value, page))
   if (newPage !== currentPage.value) {
     currentPage.value = newPage
@@ -161,7 +209,6 @@ const handleDeleteAnnotation = async (id: string) => {
 
 const handleSave = async () => {
   isSaving.value = true
-  // Annotations are auto-saved, but this can be used for explicit save confirmation
   await new Promise(resolve => setTimeout(resolve, 500))
   isSaving.value = false
   hasUnsavedChanges.value = false
@@ -229,9 +276,21 @@ const handleSelectAnnotation = (annotation: Annotation | null) => {
         </div>
       </div>
 
-      <div v-else class="pdf-page-wrapper" :style="{ width: pageWidth * scale + 'px', height: pageHeight * scale + 'px' }">
+      <div 
+        v-else 
+        class="pdf-page-wrapper" 
+        :style="{ 
+          width: (pageWidth * scale) + 'px', 
+          height: (pageHeight * scale) + 'px'
+        }"
+      >
+        <!-- PDF Canvas Layer (bottom) -->
         <canvas ref="pdfCanvas" class="pdf-canvas" />
+        
+        <!-- Annotation Canvas Layer (top) -->
         <PdfAnnotationCanvas
+          v-if="isPdfReady && pageWidth > 0 && pageHeight > 0"
+          :key="`canvas-${currentPage}-${renderKey}`"
           :width="pageWidth"
           :height="pageHeight"
           :scale="scale"
@@ -325,10 +384,15 @@ const handleSelectAnnotation = (annotation: Annotation | null) => {
   position: relative;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
   background: white;
+  flex-shrink: 0;
 }
 
 .pdf-canvas {
   display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
 }
 
 .loading-overlay,

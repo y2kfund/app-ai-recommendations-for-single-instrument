@@ -283,7 +283,7 @@ class PdfWidget extends WidgetType {
     
     pdfContainer.appendChild(icon)
     pdfContainer.appendChild(link)
-    //pdfContainer.appendChild(annotateBtn)
+    pdfContainer.appendChild(annotateBtn)
     pdfContainer.appendChild(deleteBtn)
     wrap.appendChild(pdfContainer)
     return wrap
