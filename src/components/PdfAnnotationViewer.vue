@@ -82,9 +82,33 @@ const getAnnotationsForPage = (pageNumber: number) => {
   return annotations.value.filter(a => a.page === pageNumber)
 }
 
+// Add ref for grid columns
+const gridColumns = ref(1)
+
+// Add function to calculate grid columns based on viewport
+const calculateGridColumns = () => {
+  if (!containerRef.value) return
+  
+  const containerWidth = containerRef.value.clientWidth
+  const pageWidth = pages.value[0]?.width * scale.value || 600
+  const gap = 20 // Gap between pages
+  const padding = 40 // Container padding
+  
+  const availableWidth = containerWidth - padding
+  const columnsCount = Math.floor((availableWidth + gap) / (pageWidth + gap))
+  
+  gridColumns.value = Math.max(1, Math.min(columnsCount, 4)) // Max 4 columns
+}
+
 onMounted(async () => {
   await loadPdf()
   await fetchAnnotations(props.pdfUrl, props.entryId)
+  
+  // Calculate initial grid columns
+  calculateGridColumns()
+  
+  // Add resize listener
+  window.addEventListener('resize', calculateGridColumns)
 })
 
 onUnmounted(() => {
@@ -92,10 +116,17 @@ onUnmounted(() => {
     pdfDoc.value.destroy()
     pdfDoc.value = null
   }
+  
+  // Remove resize listener
+  window.removeEventListener('resize', calculateGridColumns)
 })
 
+// Watch scale changes to recalculate grid
 watch(scale, async () => {
   await renderAllPages()
+  nextTick(() => {
+    calculateGridColumns()
+  })
 })
 
 const setCanvasRef = (pageNumber: number, el: HTMLCanvasElement | null) => {
@@ -386,6 +417,7 @@ const toggleThumbnails = () => {
         <span v-else>▶</span>
       </button>
       <span class="pdf-title">📄 {{ fileName }}</span>
+      <span class="page-info">{{ totalPages }} pages</span>
       <span v-if="isLoading || isSaving" class="saving-indicator">
         {{ isLoading ? 'Loading annotations...' : 'Saving...' }}
       </span>
@@ -437,8 +469,8 @@ const toggleThumbnails = () => {
           </div>
         </div>
 
-        <div v-else class="pdf-pages-container">
-          <!-- Render all pages -->
+        <div v-else class="pdf-pages-container" :class="`grid-cols-${gridColumns}`">
+          <!-- Render all pages in grid -->
           <div
             v-for="pageInfo in pages"
             :key="pageInfo.pageNumber"
@@ -541,6 +573,14 @@ const toggleThumbnails = () => {
   color: #e2e8f0;
   font-weight: 600;
   font-size: 14px;
+}
+
+.page-info {
+  color: #64748b;
+  font-size: 12px;
+  padding: 4px 8px;
+  background: #334155;
+  border-radius: 4px;
 }
 
 .saving-indicator {
@@ -655,18 +695,48 @@ const toggleThumbnails = () => {
 .pdf-container {
   flex: 1;
   overflow: auto;
-  display: flex;
-  justify-content: center;
   padding: 20px;
   background: #334155;
 }
 
+/* Grid layout for PDF pages */
 .pdf-pages-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
+  display: grid;
+  gap: 24px;
   padding-bottom: 40px;
+  justify-content: center;
+  justify-items: center;
+  align-items: start;
+}
+
+/* Grid column classes */
+.pdf-pages-container.grid-cols-1 {
+  grid-template-columns: repeat(1, max-content);
+}
+
+.pdf-pages-container.grid-cols-2 {
+  grid-template-columns: repeat(2, max-content);
+}
+
+.pdf-pages-container.grid-cols-3 {
+  grid-template-columns: repeat(3, max-content);
+}
+
+.pdf-pages-container.grid-cols-4 {
+  grid-template-columns: repeat(4, max-content);
+}
+
+/* Responsive grid for different viewport sizes */
+@media (min-width: 1400px) {
+  .pdf-pages-container {
+    gap: 32px;
+  }
+}
+
+@media (min-width: 1800px) {
+  .pdf-pages-container {
+    gap: 40px;
+  }
 }
 
 .pdf-page-wrapper {
@@ -674,6 +744,11 @@ const toggleThumbnails = () => {
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
   background: white;
   flex-shrink: 0;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.pdf-page-wrapper:hover {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
 }
 
 .page-number-badge {
