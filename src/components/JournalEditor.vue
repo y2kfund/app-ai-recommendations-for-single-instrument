@@ -294,6 +294,54 @@ class PdfWidget extends WidgetType {
   }
 }
 
+// Add a new LinkWidget class after PdfWidget class
+class LinkWidget extends WidgetType {
+  constructor(
+    readonly label: string,
+    readonly url: string,
+    readonly from: number,
+    readonly to: number,
+    readonly view: EditorView
+  ) {
+    super()
+  }
+
+  eq(other: LinkWidget) {
+    return other.url === this.url && other.label === this.label
+  }
+
+  toDOM() {
+    const link = document.createElement('a')
+    link.href = this.url
+    link.textContent = this.label || this.url
+    link.target = '_blank'
+    link.rel = 'noopener noreferrer'
+    link.style.color = '#3b82f6'
+    link.style.textDecoration = 'none'
+    link.style.cursor = 'pointer'
+    
+    link.addEventListener('mouseenter', () => {
+      link.style.textDecoration = 'underline'
+    })
+    
+    link.addEventListener('mouseleave', () => {
+      link.style.textDecoration = 'none'
+    })
+    
+    link.addEventListener('click', (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      window.open(this.url, '_blank')
+    })
+    
+    return link
+  }
+
+  ignoreEvent(event: Event) {
+    return event.type === 'mousedown'
+  }
+}
+
 // ViewPlugin to handle both image and PDF decorations
 const imagePlugin = ViewPlugin.fromClass(class {
   decorations: DecorationSet
@@ -312,7 +360,7 @@ const imagePlugin = ViewPlugin.fromClass(class {
     const builder = new RangeSetBuilder<Decoration>()
     const doc = view.state.doc
     
-    // Match both image and PDF markdown patterns
+    // Match both image and link markdown patterns
     const markdownRegex = /(!?\[([^\]]*)\]\(([^)]+)\))/g
     
     const text = doc.toString()
@@ -334,17 +382,21 @@ const imagePlugin = ViewPlugin.fromClass(class {
           })
           builder.add(start, end, deco)
         }
-      } else {
-        // PDF widget - check if it's a PDF link
-        if (url.includes('.pdf') || url.includes('journal-attachments')) {
-          const fileName = label || url.split('/').pop() || 'PDF File'
-          const deco = Decoration.replace({
-            widget: new PdfWidget(fileName, url, start, end, view, (url, fileName) => {
-              openPdfWithAnnotations(url, fileName)
-            })
+      } else if (url.includes('.pdf') || url.includes('journal-attachments')) {
+        // PDF widget
+        const fileName = label || url.split('/').pop() || 'PDF File'
+        const deco = Decoration.replace({
+          widget: new PdfWidget(fileName, url, start, end, view, (url, fileName) => {
+            openPdfWithAnnotations(url, fileName)
           })
-          builder.add(start, end, deco)
-        }
+        })
+        builder.add(start, end, deco)
+      } else if (url.startsWith('http://') || url.startsWith('https://')) {
+        // Regular link widget
+        const deco = Decoration.replace({
+          widget: new LinkWidget(label, url, start, end, view)
+        })
+        builder.add(start, end, deco)
       }
     }
     
