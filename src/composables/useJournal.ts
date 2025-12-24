@@ -25,7 +25,7 @@ export interface JournalEntry {
   children?: JournalEntry[]
 }
 
-export function useJournal(userId: string, symbolRoot: string) {
+export function useJournal(userId: string, symbolRoot: string, noteId?: string | null) {
   const entries = ref<JournalEntry[]>([])
   const selectedEntry = ref<JournalEntry | null>(null)
   const isLoading = ref(false)
@@ -115,10 +115,16 @@ export function useJournal(userId: string, symbolRoot: string) {
 
       entries.value = rootEntries
 
-      // Restore last selected note
-      const lastSelectedNoteId = await loadLastSelectedNote()
-      if (lastSelectedNoteId && entryMap.has(lastSelectedNoteId)) {
-        selectedEntry.value = entryMap.get(lastSelectedNoteId)!
+      // Priority: 1. noteId prop, 2. last selected note from preferences
+      if (noteId && entryMap.has(noteId)) {
+        selectedEntry.value = entryMap.get(noteId)!
+        await saveLastSelectedNote(noteId)
+      } else {
+        // Restore last selected note
+        const lastSelectedNoteId = await loadLastSelectedNote()
+        if (lastSelectedNoteId && entryMap.has(lastSelectedNoteId)) {
+          selectedEntry.value = entryMap.get(lastSelectedNoteId)!
+        }
       }
     } catch (err: any) {
       error.value = err.message

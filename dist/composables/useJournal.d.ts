@@ -13,7 +13,7 @@ export interface JournalEntry {
     updated_at: string;
     children?: JournalEntry[];
 }
-export declare function useJournal(userId: string, symbolRoot: string): {
+export declare function useJournal(userId: string, symbolRoot: string, noteId?: string | null): {
     entries: import('vue').Ref<{
         id: string;
         user_id: string;

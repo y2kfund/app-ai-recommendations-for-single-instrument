@@ -1,6 +1,7 @@
 interface JournalProps {
     userId: string;
     symbolRoot: string;
+    noteId?: string | null;
 }
 declare const _default: import('vue').DefineComponent<JournalProps, {}, {}, {}, {}, import('vue').ComponentOptionsMixin, import('vue').ComponentOptionsMixin, {
     "update:selectedEntry": (entry: any) => any;

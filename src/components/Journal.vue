@@ -6,7 +6,8 @@ import JournalEditor from './JournalEditor.vue'
 
 interface JournalProps {
   userId: string
-  symbolRoot: string
+  symbolRoot: string 
+  noteId?: string | null
 }
 
 const props = defineProps<JournalProps>()
@@ -26,7 +27,7 @@ const {
   deleteEntry,
   selectEntry,
   toggleCollapse
-} = useJournal(props.userId, props.symbolRoot)
+} = useJournal(props.userId, props.symbolRoot, props.noteId)
 
 // Emit selectedEntry changes to parent
 watch(selectedEntry, (newEntry) => {
@@ -56,6 +57,16 @@ const handleToggle = async (id: string) => {
 const handleSelectEntry = async (id: string) => {
   await selectEntry(id)
 }
+
+watch(
+  () => props.noteId,
+  async (newNoteId) => {
+    if(newNoteId) {
+      isSidebarVisible.value = true
+    }
+  },
+  { immediate: true }
+)
 
 const toggleSidebar = () => {
   isSidebarVisible.value = !isSidebarVisible.value

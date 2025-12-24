@@ -9,12 +9,14 @@ interface AiRecommendationsProps {
   symbolRoot: string
   userId?: string | null
   defaultTab?: 'analyst' | 'journal'
+  noteId?: string | null
 }
 
 const props = withDefaults(defineProps<AiRecommendationsProps>(), {
   userId: '67e578fd-2cf7-48a4-b028-a11a3f89bb9b',
   symbolRoot: 'NotePage',
-  defaultTab: 'analyst'
+  defaultTab: 'analyst',
+  noteId: null,
 })
 
 const emit = defineEmits<{
@@ -174,7 +176,8 @@ const handleClearAll = async () => {
       <Journal
           :user-id="userId"
           :symbol-root="symbolRoot"
-          @update:selected-entry="handleSelectedEntryUpdate"
+          @update:selected-entry="handleSelectedEntryUpdate" 
+          :note-id="props.noteId"
         />
     </div>
 
@@ -214,7 +217,7 @@ const handleClearAll = async () => {
         <Journal
           :user-id="userId"
           :symbol-root="symbolRoot"
-          @update:selected-entry="handleSelectedEntryUpdate"
+          @update:selected-entry="handleSelectedEntryUpdate" 
         />
       </div>
     </div>
