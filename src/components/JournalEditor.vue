@@ -464,26 +464,35 @@ const orderedListIndentKeymap = keymap.of([
       const line = state.doc.lineAt(from)
       const lineText = line.text
       
-      // Check if current line is an ordered list item
+      // Check if current line is an ordered list item (with or without indentation)
       const orderedListMatch = lineText.match(/^(\s*)(\d+)\.\s(.*)$/)
       
       if (orderedListMatch) {
-        const indent = orderedListMatch[1]
+        const indent = orderedListMatch[1] // Preserve the exact indentation
         const currentNumber = parseInt(orderedListMatch[2], 10)
         const content = orderedListMatch[3]
         
-        // If the line content is empty, remove the list marker
+        // If the line content is empty, remove the list marker and outdent
         if (content.trim() === '') {
-          view.dispatch({
-            changes: { from: line.from, to: line.to, insert: '' },
-            selection: { anchor: line.from }
-          })
+          // If indented, just remove the current line
+          if (indent.length > 0) {
+            view.dispatch({
+              changes: { from: line.from, to: line.to, insert: '' },
+              selection: { anchor: line.from }
+            })
+          } else {
+            // If not indented, remove the line
+            view.dispatch({
+              changes: { from: line.from, to: line.to, insert: '' },
+              selection: { anchor: line.from }
+            })
+          }
           return true
         }
         
-        // Insert new line with next number
+        // Insert new line with next number, preserving the SAME indentation
         const nextNumber = currentNumber + 1
-        const newLine = `\n${indent}${nextNumber}.`
+        const newLine = `\n${indent}${nextNumber}. `
         
         view.dispatch({
           changes: { from, insert: newLine },
@@ -510,7 +519,7 @@ const orderedListIndentKeymap = keymap.of([
           return true
         }
         
-        // Insert new line with same bullet
+        // Insert new line with same bullet, preserving indentation
         const newLine = `\n${indent}${bullet} `
         
         view.dispatch({
@@ -539,7 +548,7 @@ const orderedListIndentKeymap = keymap.of([
       if (orderedListMatch) {
         const currentIndent = orderedListMatch[1]
         const restOfLine = orderedListMatch[3]
-        const newIndent = currentIndent + '\t'
+        const newIndent = currentIndent + '      ' // 6 spaces for indent
         
         // Replace the line with indented version, starting at 1
         const newLine = `${newIndent}1. ${restOfLine}`
@@ -552,8 +561,32 @@ const orderedListIndentKeymap = keymap.of([
         return true
       }
       
-      // For non-ordered-list lines, use default Tab behavior
-      return false
+      // Check for unordered list items
+      const bulletMatch = lineText.match(/^(\s*)([-*+])\s(.*)$/)
+      
+      if (bulletMatch) {
+        const currentIndent = bulletMatch[1]
+        const bullet = bulletMatch[2]
+        const restOfLine = bulletMatch[3]
+        const newIndent = currentIndent + '      ' // 6 spaces for indent
+        
+        const newLine = `${newIndent}${bullet} ${restOfLine}`
+        
+        view.dispatch({
+          changes: { from: line.from, to: line.to, insert: newLine },
+          selection: { anchor: line.from + newLine.length }
+        })
+        
+        return true
+      }
+      
+      // For non-list lines, insert 6 spaces
+      view.dispatch({
+        changes: { from, insert: '      ' },
+        selection: { anchor: from + 6 }
+      })
+      
+      return true
     }
   },
   {
@@ -571,12 +604,33 @@ const orderedListIndentKeymap = keymap.of([
         const currentIndent = orderedListMatch[1]
         const restOfLine = orderedListMatch[3]
         
-        // Remove 3 spaces (or less if not enough)
-        const spacesToRemove = Math.min(3, currentIndent.length)
+        // Remove 6 spaces (or less if not enough)
+        const spacesToRemove = Math.min(6, currentIndent.length)
         const newIndent = currentIndent.slice(spacesToRemove)
         
         // Replace the line with outdented version, restart at 1
         const newLine = `${newIndent}1. ${restOfLine}`
+        
+        view.dispatch({
+          changes: { from: line.from, to: line.to, insert: newLine },
+          selection: { anchor: line.from + newLine.length }
+        })
+        
+        return true
+      }
+      
+      // Check for indented unordered list items
+      const bulletMatch = lineText.match(/^(\s+)([-*+])\s(.*)$/)
+      
+      if (bulletMatch) {
+        const currentIndent = bulletMatch[1]
+        const bullet = bulletMatch[2]
+        const restOfLine = bulletMatch[3]
+        
+        const spacesToRemove = Math.min(6, currentIndent.length)
+        const newIndent = currentIndent.slice(spacesToRemove)
+        
+        const newLine = `${newIndent}${bullet} ${restOfLine}`
         
         view.dispatch({
           changes: { from: line.from, to: line.to, insert: newLine },
@@ -1166,7 +1220,7 @@ const closePdfViewer = () => {
         v-model="content"
         :extensions="extensions"
         :tab-size="6"
-        :indent-with-tab="true"
+        :indent-with-tab="false"
         :style="{ height: '100%' }"
         placeholder="Start writing your journal entry..."
         @ready="handleReady"
