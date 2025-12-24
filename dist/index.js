@@ -57325,7 +57325,7 @@ ${He}${Rt} `;
     defaultTab: { default: "analyst" },
     noteId: { default: null }
   },
-  emits: ["update:defaultTab"],
+  emits: ["update:defaultTab", "update:selectedEntry"],
   setup(s, { emit: e }) {
     const t = s, i = e;
     function r() {
@@ -57359,7 +57359,7 @@ ${He}${Rt} `;
       var C;
       return ((C = m.value) == null ? void 0 : C.title) || "Journal";
     }), b = (C) => {
-      m.value = C;
+      m.value = C, i("update:selectedEntry", C);
     };
     zh(async () => {
       t.userId && t.symbolRoot && await d();
@@ -57531,7 +57531,7 @@ ${He}${Rt} `;
       ])]))
     ]));
   }
-}), Eee = /* @__PURE__ */ yo(pee, [["__scopeId", "data-v-50af13b0"]]);
+}), Eee = /* @__PURE__ */ yo(pee, [["__scopeId", "data-v-ee98410a"]]);
 export {
   Eee as AiReccomendations,
   Eee as default

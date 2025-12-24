@@ -5,8 +5,10 @@ interface AiRecommendationsProps {
     noteId?: string | null;
 }
 declare const _default: import('vue').DefineComponent<AiRecommendationsProps, {}, {}, {}, {}, import('vue').ComponentOptionsMixin, import('vue').ComponentOptionsMixin, {
+    "update:selectedEntry": (entry: any) => any;
     "update:defaultTab": (value: "analyst" | "journal") => any;
 }, string, import('vue').PublicProps, Readonly<AiRecommendationsProps> & Readonly<{
+    "onUpdate:selectedEntry"?: ((entry: any) => any) | undefined;
     "onUpdate:defaultTab"?: ((value: "analyst" | "journal") => any) | undefined;
 }>, {
     noteId: string | null;

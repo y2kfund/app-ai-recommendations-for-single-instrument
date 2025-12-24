@@ -21,6 +21,7 @@ const props = withDefaults(defineProps<AiRecommendationsProps>(), {
 
 const emit = defineEmits<{
   'update:defaultTab': [value: 'analyst' | 'journal']
+  'update:selectedEntry': [entry: any]
 }>()
 
 // Helper functions for URL params (similar to Summary.vue)
@@ -81,6 +82,7 @@ const journalTabLabel = computed(() => {
 
 const handleSelectedEntryUpdate = (entry: any) => {
   selectedJournalEntry.value = entry
+  emit('update:selectedEntry', entry)
 }
 
 // Load conversations on mount
