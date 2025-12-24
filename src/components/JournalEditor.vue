@@ -3,8 +3,8 @@ import { ref, watch, shallowRef, onBeforeUnmount, nextTick, onMounted } from 'vu
 import { Codemirror } from 'vue-codemirror'
 import { markdown } from '@codemirror/lang-markdown'
 import { EditorView, keymap, Decoration, DecorationSet, WidgetType, ViewPlugin, ViewUpdate } from '@codemirror/view'
-import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
-import { RangeSetBuilder } from '@codemirror/state'
+import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands'
+import { RangeSetBuilder, EditorState } from '@codemirror/state'
 import type { JournalEntry } from '../composables/useJournal'
 import { syntaxHighlighting, HighlightStyle } from '@codemirror/language'
 import { tags } from '@lezer/highlight'
@@ -974,6 +974,8 @@ const closePdfViewer = () => {
       <Codemirror
         v-model="content"
         :extensions="extensions"
+        :tab-size="6"
+        :indent-with-tab="true"
         :style="{ height: '100%' }"
         placeholder="Start writing your journal entry..."
         @ready="handleReady"

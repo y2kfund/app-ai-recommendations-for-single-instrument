@@ -56983,6 +56983,8 @@ const dJ = { class: "pdf-annotation-viewer" }, fJ = { class: "pdf-header" }, gJ 
           modelValue: n.value,
           "onUpdate:modelValue": D[2] || (D[2] = (j) => n.value = j),
           extensions: x,
+          "tab-size": 6,
+          "indent-with-tab": !0,
           style: { height: "100%" },
           placeholder: "Start writing your journal entry...",
           onReady: _,
@@ -57000,7 +57002,7 @@ const dJ = { class: "pdf-annotation-viewer" }, fJ = { class: "pdf-header" }, gJ 
       }, null, 8, ["pdf-url", "file-name", "symbol-root", "entry-id"])) : Jt("", !0)
     ]));
   }
-}), WJ = /* @__PURE__ */ mo(jJ, [["__scopeId", "data-v-5942ddd4"]]), zJ = { class: "journal-container" }, YJ = ["title"], qJ = {
+}), WJ = /* @__PURE__ */ mo(jJ, [["__scopeId", "data-v-de3b7b83"]]), zJ = { class: "journal-container" }, YJ = ["title"], qJ = {
   key: 0,
   class: "journal-sidebar"
 }, JJ = { class: "journal-header" }, eee = {
