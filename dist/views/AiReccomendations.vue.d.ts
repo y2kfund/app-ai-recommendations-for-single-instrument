@@ -9,9 +9,9 @@ declare const _default: import('vue').DefineComponent<AiRecommendationsProps, {}
 }, string, import('vue').PublicProps, Readonly<AiRecommendationsProps> & Readonly<{
     "onUpdate:defaultTab"?: ((value: "analyst" | "journal") => any) | undefined;
 }>, {
+    noteId: string | null;
     symbolRoot: string;
     userId: string | null;
-    noteId: string | null;
     defaultTab: "analyst" | "journal";
 }, {}, {}, {}, string, import('vue').ComponentProvideOptions, false, {}, HTMLDivElement>;
 export default _default;

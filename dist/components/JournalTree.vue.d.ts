@@ -3,6 +3,7 @@ interface JournalTreeProps {
     entries: JournalEntry[];
     selectedId?: string | null;
     level?: number;
+    noteId?: string | null;
 }
 declare const _default: import('vue').DefineComponent<JournalTreeProps, {}, {}, {}, {}, import('vue').ComponentOptionsMixin, import('vue').ComponentOptionsMixin, {
     select: (id: string) => any;
@@ -17,5 +18,6 @@ declare const _default: import('vue').DefineComponent<JournalTreeProps, {}, {}, 
 }>, {
     selectedId: string | null;
     level: number;
+    noteId: string | null;
 }, {}, {}, {}, string, import('vue').ComponentProvideOptions, false, {}, HTMLDivElement>;
 export default _default;

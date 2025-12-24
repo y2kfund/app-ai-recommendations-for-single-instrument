@@ -106,7 +106,8 @@ const toggleSidebar = () => {
       <JournalTree
         v-else
         :entries="entries"
-        :selected-id="selectedEntry?.id"
+        :selected-id="selectedEntry?.id" 
+        :note-id="props.noteId"
         @select="handleSelectEntry"
         @create="handleCreateEntry"
         @delete="handleDeleteEntry"

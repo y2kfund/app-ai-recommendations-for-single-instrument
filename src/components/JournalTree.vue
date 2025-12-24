@@ -1,17 +1,22 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import type { JournalEntry } from '../composables/useJournal'
 
 interface JournalTreeProps {
   entries: JournalEntry[]
   selectedId?: string | null
-  level?: number
+  level?: number 
+  noteId?: string | null
 }
 
 const props = withDefaults(defineProps<JournalTreeProps>(), {
   selectedId: null,
-  level: 0
+  level: 0,
+  noteId: null
 })
+
+const router = useRouter()
 
 const emit = defineEmits<{
   select: [id: string]
@@ -19,6 +24,15 @@ const emit = defineEmits<{
   delete: [id: string]
   toggle: [id: string]
 }>()
+
+function handleClick(entry: JournalEntry) {
+  if (props.noteId) {
+    //router.push(`/notes/${entry.id}`)
+    window.location.href = `/notes/${entry.id}`
+  } else {
+    emit('select', entry.id)
+  }
+}
 </script>
 
 <template>
@@ -31,37 +45,44 @@ const emit = defineEmits<{
     >
       <div
         :class="['node-header', { selected: entry.id === selectedId }]"
-        @click="emit('select', entry.id)"
+        @click="handleClick(entry)"
       >
-        <a :href="`/notes/${entry.id}`" @click.prevent>
-          <button
-            v-if="entry.children && entry.children.length > 0"
-            class="collapse-btn"
-            @click.stop="emit('toggle', entry.id)"
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline :points="entry.is_collapsed ? '9 18 15 12 9 6' : '6 9 12 15 18 9'"/>
-            </svg>
-          </button>
-          <span v-else class="spacer"></span>
-          
-          <span :class="['node-title', { bold: entry.is_bold }]">{{ entry.title }}</span>
-          
-          <div class="node-actions">
-            <button class="action-btn" @click.stop="emit('create', entry.id)" title="Add child note">
+        <component
+          :is="noteId ? 'a' : 'div'"
+          :href="noteId ? `/notes/${entry.id}` : undefined"
+          class="node-content"
+          @click.prevent
+        >
+          <a :href="`/notes/${entry.id}`" @click.prevent>
+            <button
+              v-if="entry.children && entry.children.length > 0"
+              class="collapse-btn"
+              @click.stop="emit('toggle', entry.id)"
+            >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="12" y1="5" x2="12" y2="19"/>
-                <line x1="5" y1="12" x2="19" y2="12"/>
+                <polyline :points="entry.is_collapsed ? '9 18 15 12 9 6' : '6 9 12 15 18 9'"/>
               </svg>
             </button>
-            <button class="action-btn delete" @click.stop="emit('delete', entry.id)" title="Delete note">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="3 6 5 6 21 6"/>
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-              </svg>
-            </button>
-          </div>
-        </a>
+            <span v-else class="spacer"></span>
+            
+            <span :class="['node-title', { bold: entry.is_bold }]">{{ entry.title }}</span>
+            
+            <div class="node-actions">
+              <button class="action-btn" @click.stop="emit('create', entry.id)" title="Add child note">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="5" x2="12" y2="19"/>
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+              </button>
+              <button class="action-btn delete" @click.stop="emit('delete', entry.id)" title="Delete note">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"/>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+              </button>
+            </div>
+          </a>
+        </component>
       </div>
       
       <JournalTree
@@ -69,6 +90,7 @@ const emit = defineEmits<{
         :entries="entry.children"
         :selected-id="selectedId"
         :level="level + 1"
+        :note-id="noteId"
         @select="emit('select', $event)"
         @create="emit('create', $event)"
         @delete="emit('delete', $event)"
@@ -87,7 +109,7 @@ const emit = defineEmits<{
   margin-bottom: 1px;
 }
 
-.node-header a {
+.node-content a {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -98,6 +120,8 @@ const emit = defineEmits<{
   min-height: 26px;
   box-sizing: border-box;
   text-decoration: none;
+  width: 100%;
+  color: inherit;
 }
 
 .node-header:hover {
@@ -206,5 +230,11 @@ const emit = defineEmits<{
     width: 18px;
     height: 18px;
   }
+}
+</style>
+
+<style>
+a.node-content {
+  text-decoration: none;
 }
 </style>
