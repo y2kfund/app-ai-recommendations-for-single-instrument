@@ -91,13 +91,13 @@ const calculateGridColumns = () => {
   
   const containerWidth = containerRef.value.clientWidth
   const pageWidth = pages.value[0]?.width * scale.value || 600
-  const gap = 20 // Gap between pages
+  const gap = 24 // Gap between pages (matching CSS)
   const padding = 40 // Container padding
   
   const availableWidth = containerWidth - padding
   const columnsCount = Math.floor((availableWidth + gap) / (pageWidth + gap))
   
-  gridColumns.value = Math.max(1, Math.min(columnsCount, 40)) // Max 40 columns
+  gridColumns.value = Math.max(1, columnsCount) // No maximum limit
 }
 
 onMounted(async () => {
@@ -469,7 +469,7 @@ const toggleThumbnails = () => {
           </div>
         </div>
 
-        <div v-else class="pdf-pages-container" :class="`grid-cols-${gridColumns}`">
+        <div v-else class="pdf-pages-container" :style="{ gridTemplateColumns: `repeat(${gridColumns}, max-content)` }">
           <!-- Render all pages in grid -->
           <div
             v-for="pageInfo in pages"
@@ -481,6 +481,7 @@ const toggleThumbnails = () => {
               height: (pageInfo.height * scale) + 'px'
             }"
           >
+
             <!-- Page number indicator -->
             <div class="page-number-badge">{{ pageInfo.pageNumber }}</div>
             
@@ -707,23 +708,6 @@ const toggleThumbnails = () => {
   justify-content: center;
   justify-items: center;
   align-items: start;
-}
-
-/* Grid column classes */
-.pdf-pages-container.grid-cols-1 {
-  grid-template-columns: repeat(1, max-content);
-}
-
-.pdf-pages-container.grid-cols-2 {
-  grid-template-columns: repeat(2, max-content);
-}
-
-.pdf-pages-container.grid-cols-3 {
-  grid-template-columns: repeat(3, max-content);
-}
-
-.pdf-pages-container.grid-cols-4 {
-  grid-template-columns: repeat(4, max-content);
 }
 
 /* Responsive grid for different viewport sizes */
