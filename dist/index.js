@@ -56171,7 +56171,7 @@ const gJ = { class: "pdf-annotation-viewer" }, pJ = { class: "pdf-header" }, mJ 
       var Yr;
       if (!g.value) return;
       const ve = g.value.clientWidth, re = ((Yr = b.value[0]) == null ? void 0 : Yr.width) * f.value || 600, ae = 20, Yt = ve - 40, As = Math.floor((Yt + ae) / (re + ae));
-      H.value = Math.max(1, Math.min(As, 4));
+      H.value = Math.max(1, Math.min(As, 40));
     };
     zh(async () => {
       await fe(), await o(t.pdfUrl, t.entryId), N(), window.addEventListener("resize", N);
@@ -56435,7 +56435,7 @@ const gJ = { class: "pdf-annotation-viewer" }, pJ = { class: "pdf-header" }, mJ 
       ])) : ii("", !0)
     ]));
   }
-}), NJ = /* @__PURE__ */ yo(HJ, [["__scopeId", "data-v-82fe42fc"]]), XJ = { class: "journal-editor" }, VJ = { class: "editor-header" }, GJ = ["title"], KJ = { class: "editor-toolbar" }, ZJ = ["disabled"], jJ = {
+}), NJ = /* @__PURE__ */ yo(HJ, [["__scopeId", "data-v-1eac2874"]]), XJ = { class: "journal-editor" }, VJ = { class: "editor-header" }, GJ = ["title"], KJ = { class: "editor-toolbar" }, ZJ = ["disabled"], jJ = {
   key: 0,
   class: "drop-overlay"
 }, WJ = {

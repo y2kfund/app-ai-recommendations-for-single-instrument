@@ -97,7 +97,7 @@ const calculateGridColumns = () => {
   const availableWidth = containerWidth - padding
   const columnsCount = Math.floor((availableWidth + gap) / (pageWidth + gap))
   
-  gridColumns.value = Math.max(1, Math.min(columnsCount, 4)) // Max 4 columns
+  gridColumns.value = Math.max(1, Math.min(columnsCount, 40)) // Max 40 columns
 }
 
 onMounted(async () => {
