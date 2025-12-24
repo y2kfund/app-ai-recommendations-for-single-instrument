@@ -33,33 +33,35 @@ const emit = defineEmits<{
         :class="['node-header', { selected: entry.id === selectedId }]"
         @click="emit('select', entry.id)"
       >
-        <button
-          v-if="entry.children && entry.children.length > 0"
-          class="collapse-btn"
-          @click.stop="emit('toggle', entry.id)"
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline :points="entry.is_collapsed ? '9 18 15 12 9 6' : '6 9 12 15 18 9'"/>
-          </svg>
-        </button>
-        <span v-else class="spacer"></span>
-        
-        <span :class="['node-title', { bold: entry.is_bold }]">{{ entry.title }}</span>
-        
-        <div class="node-actions">
-          <button class="action-btn" @click.stop="emit('create', entry.id)" title="Add child note">
+        <a :href="`/notes/${entry.id}`" @click.prevent>
+          <button
+            v-if="entry.children && entry.children.length > 0"
+            class="collapse-btn"
+            @click.stop="emit('toggle', entry.id)"
+          >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="12" y1="5" x2="12" y2="19"/>
-              <line x1="5" y1="12" x2="19" y2="12"/>
+              <polyline :points="entry.is_collapsed ? '9 18 15 12 9 6' : '6 9 12 15 18 9'"/>
             </svg>
           </button>
-          <button class="action-btn delete" @click.stop="emit('delete', entry.id)" title="Delete note">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="3 6 5 6 21 6"/>
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-            </svg>
-          </button>
-        </div>
+          <span v-else class="spacer"></span>
+          
+          <span :class="['node-title', { bold: entry.is_bold }]">{{ entry.title }}</span>
+          
+          <div class="node-actions">
+            <button class="action-btn" @click.stop="emit('create', entry.id)" title="Add child note">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+            </button>
+            <button class="action-btn delete" @click.stop="emit('delete', entry.id)" title="Delete note">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              </svg>
+            </button>
+          </div>
+        </a>
       </div>
       
       <JournalTree
@@ -85,7 +87,7 @@ const emit = defineEmits<{
   margin-bottom: 1px;
 }
 
-.node-header {
+.node-header a {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -95,6 +97,7 @@ const emit = defineEmits<{
   transition: background 0.15s ease;
   min-height: 26px;
   box-sizing: border-box;
+  text-decoration: none;
 }
 
 .node-header:hover {
