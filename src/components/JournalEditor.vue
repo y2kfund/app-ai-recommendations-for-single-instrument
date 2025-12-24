@@ -4,7 +4,7 @@ import { Codemirror } from 'vue-codemirror'
 import { markdown } from '@codemirror/lang-markdown'
 import { EditorView, keymap, Decoration, DecorationSet, WidgetType, ViewPlugin, ViewUpdate } from '@codemirror/view'
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands'
-import { RangeSetBuilder, EditorState } from '@codemirror/state'
+import { RangeSetBuilder, EditorState, Prec } from '@codemirror/state'
 import type { JournalEntry } from '../composables/useJournal'
 import { syntaxHighlighting, HighlightStyle } from '@codemirror/language'
 import { tags } from '@lezer/highlight'
@@ -454,11 +454,150 @@ const markdownHighlighting = HighlightStyle.define([
   { tag: tags.heading6, fontSize: '0.95em', fontWeight: '600', color: '#64748b', lineHeight: '1.5' },
 ])
 
+// Custom Tab handler for ordered lists - restarts numbering at 1 when indenting
+const orderedListIndentKeymap = keymap.of([
+  {
+    key: 'Enter',
+    run: (view: EditorView) => {
+      const { state } = view
+      const { from } = state.selection.main
+      const line = state.doc.lineAt(from)
+      const lineText = line.text
+      
+      // Check if current line is an ordered list item
+      const orderedListMatch = lineText.match(/^(\s*)(\d+)\.\s(.*)$/)
+      
+      if (orderedListMatch) {
+        const indent = orderedListMatch[1]
+        const currentNumber = parseInt(orderedListMatch[2], 10)
+        const content = orderedListMatch[3]
+        
+        // If the line content is empty, remove the list marker
+        if (content.trim() === '') {
+          view.dispatch({
+            changes: { from: line.from, to: line.to, insert: '' },
+            selection: { anchor: line.from }
+          })
+          return true
+        }
+        
+        // Insert new line with next number
+        const nextNumber = currentNumber + 1
+        const newLine = `\n${indent}${nextNumber}.`
+        
+        view.dispatch({
+          changes: { from, insert: newLine },
+          selection: { anchor: from + newLine.length }
+        })
+        
+        return true
+      }
+      
+      // Check for unordered list items (bullet points)
+      const bulletMatch = lineText.match(/^(\s*)([-*+])\s(.*)$/)
+      
+      if (bulletMatch) {
+        const indent = bulletMatch[1]
+        const bullet = bulletMatch[2]
+        const content = bulletMatch[3]
+        
+        // If the line content is empty, remove the list marker
+        if (content.trim() === '') {
+          view.dispatch({
+            changes: { from: line.from, to: line.to, insert: '' },
+            selection: { anchor: line.from }
+          })
+          return true
+        }
+        
+        // Insert new line with same bullet
+        const newLine = `\n${indent}${bullet} `
+        
+        view.dispatch({
+          changes: { from, insert: newLine },
+          selection: { anchor: from + newLine.length }
+        })
+        
+        return true
+      }
+      
+      // Default: let other handlers process
+      return false
+    }
+  },
+  {
+    key: 'Tab',
+    run: (view: EditorView) => {
+      const { state } = view
+      const { from } = state.selection.main
+      const line = state.doc.lineAt(from)
+      const lineText = line.text
+      
+      // Check if current line is an ordered list item (e.g., "2. hello" or "   3. item")
+      const orderedListMatch = lineText.match(/^(\s*)(\d+)\.\s(.*)$/)
+      
+      if (orderedListMatch) {
+        const currentIndent = orderedListMatch[1]
+        const restOfLine = orderedListMatch[3]
+        const newIndent = currentIndent + '\t'
+        
+        // Replace the line with indented version, starting at 1
+        const newLine = `${newIndent}1. ${restOfLine}`
+        
+        view.dispatch({
+          changes: { from: line.from, to: line.to, insert: newLine },
+          selection: { anchor: line.from + newLine.length }
+        })
+        
+        return true
+      }
+      
+      // For non-ordered-list lines, use default Tab behavior
+      return false
+    }
+  },
+  {
+    key: 'Shift-Tab',
+    run: (view: EditorView) => {
+      const { state } = view
+      const { from } = state.selection.main
+      const line = state.doc.lineAt(from)
+      const lineText = line.text
+      
+      // Check if current line is an indented ordered list item
+      const orderedListMatch = lineText.match(/^(\s+)(\d+)\.\s(.*)$/)
+      
+      if (orderedListMatch) {
+        const currentIndent = orderedListMatch[1]
+        const restOfLine = orderedListMatch[3]
+        
+        // Remove 3 spaces (or less if not enough)
+        const spacesToRemove = Math.min(3, currentIndent.length)
+        const newIndent = currentIndent.slice(spacesToRemove)
+        
+        // Replace the line with outdented version, restart at 1
+        const newLine = `${newIndent}1. ${restOfLine}`
+        
+        view.dispatch({
+          changes: { from: line.from, to: line.to, insert: newLine },
+          selection: { anchor: line.from + newLine.length }
+        })
+        
+        return true
+      }
+      
+      return false
+    }
+  }
+])
+
 // CodeMirror extensions
 const extensions = [
   markdown(),
   history(),
+  Prec.high(orderedListIndentKeymap), // Add custom handler with high precedence
   keymap.of([
+    indentWithTab,
     ...defaultKeymap,
     ...historyKeymap,
   ]),
