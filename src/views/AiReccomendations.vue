@@ -13,7 +13,7 @@ interface AiRecommendationsProps {
 
 const props = withDefaults(defineProps<AiRecommendationsProps>(), {
   userId: '67e578fd-2cf7-48a4-b028-a11a3f89bb9b',
-  symbolRoot: 'META',
+  symbolRoot: 'NotePage',
   defaultTab: 'analyst'
 })
 
@@ -131,7 +131,7 @@ const handleClearAll = async () => {
 
 <template>
   <div class="ai-recommendation-box">
-    <div class="recommendation-header">
+    <div class="recommendation-header" v-if="symbolRoot !== 'NotePage'">
       <div class="header-content">
         <div class="tabs">
           <button
@@ -168,6 +168,14 @@ const handleClearAll = async () => {
       </svg>
       <h3>Symbol Not Found</h3>
       <p>No symbol root provided for analysis</p>
+    </div>
+
+    <div v-else-if="symbolRoot === 'NotePage'" class="journal-only-content">
+      <Journal
+          :user-id="userId"
+          :symbol-root="symbolRoot"
+          @update:selected-entry="handleSelectedEntryUpdate"
+        />
     </div>
 
     <div v-else class="recommendation-content">
